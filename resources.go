@@ -4,12 +4,12 @@ import (
 	"net/url"
 
 	"github.com/gofiber/fiber/v2"
+	auth "github.com/nicolasbonnici/gorest-auth"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/filter"
 	"github.com/nicolasbonnici/gorest/pagination"
 	"github.com/nicolasbonnici/gorest/response"
-	auth "github.com/nicolasbonnici/gorest-auth"
 )
 
 type CommentResource struct {
@@ -48,9 +48,9 @@ func (r *CommentResource) List(c *fiber.Ctx) error {
 	allowedFields := []string{"id", "user_id", "commentable_id", "commentable", "parent_id", "content", "updated_at", "created_at"}
 
 	queryParams := make(url.Values)
-	c.Context().QueryArgs().VisitAll(func(key, value []byte) {
+	for key, value := range c.Context().QueryArgs().All() {
 		queryParams.Add(string(key), string(value))
-	})
+	}
 
 	filters := filter.NewFilterSet(allowedFields, r.DB.Dialect())
 	if err := filters.ParseFromQuery(queryParams); err != nil {

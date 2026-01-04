@@ -1,28 +1,47 @@
-.PHONY: help test lint build clean coverage
+.PHONY: help test lint lint-fix build clean install coverage
 
-help:
+# Default target
+.DEFAULT_GOAL := help
+
+help: ## Show this help message
 	@echo "Available targets:"
-	@echo "  test      - Run tests"
-	@echo "  lint      - Run linter"
-	@echo "  build     - Build the project"
-	@echo "  clean     - Clean build artifacts"
-	@echo "  coverage  - Run tests with coverage report"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-test:
-	go test -v -race ./...
+install: ## Install development tools
+	@echo "Installing golangci-lint..."
+	@which golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin latest
+	@echo "✓ Tools installed"
 
-lint:
-	golangci-lint run
+test: ## Run tests
+	@echo "Running tests..."
+	@go test -v -race ./...
 
-build:
-	go build -v ./...
+lint: ## Run linter
+	@echo "Running golangci-lint..."
+	@$$(go env GOPATH)/bin/golangci-lint run ./...
 
-clean:
-	go clean -cache -testcache -modcache
-	rm -f coverage.out
+lint-fix: ## Run linter with auto-fix
+	@echo "Running golangci-lint with auto-fix..."
+	@$$(go env GOPATH)/bin/golangci-lint run --fix ./...
 
-coverage:
-	go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
-	go tool cover -func=coverage.out
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+build: ## Build verification
+	@echo "Building plugin..."
+	@go build -v ./...
+	@echo "✓ Build successful"
+
+clean: ## Clean build artifacts and caches
+	@echo "Cleaning..."
+	@go clean -cache -testcache -modcache
+	@rm -f coverage.out coverage.html
+	@echo "✓ Cleaned"
+
+coverage: ## Generate and display coverage report
+	@echo "Running tests with coverage..."
+	@go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+	@echo ""
+	@echo "Coverage summary:"
+	@go tool cover -func=coverage.out
+	@echo ""
+	@echo "Generating HTML coverage report..."
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "✓ Coverage report saved to coverage.html"
