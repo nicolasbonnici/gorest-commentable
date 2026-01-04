@@ -1,6 +1,6 @@
 # GoREST Commentable Plugin
 
-[![Test](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/test.yml/badge.svg?branch=trunk)](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/test.yml)
+[![Test](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nicolasbonnici/gorest-commentable)](https://goreportcard.com/report/github.com/nicolasbonnici/gorest-commentable)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
