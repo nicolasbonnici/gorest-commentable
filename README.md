@@ -1,6 +1,6 @@
 # GoREST Commentable Plugin
 
-[![Test](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/ci.yml)
+[![Test](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nicolasbonnici/gorest-commentable)](https://goreportcard.com/report/github.com/nicolasbonnici/gorest-commentable)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -8,7 +8,7 @@ A polymorphic commenting plugin for GoREST that allows adding comments to any re
 
 ## Features
 
-- **Polymorphic Comments**: Add comments to any resource type (posts, articles, products, etc.)
+- **Polymorphic Comments**: Add comments to any resource type
 - **Nested Comments**: Support for hierarchical comment threads
 - **Configurable Allowed Types**: Control which resource types can be commented on
 - **Content Validation**: XSS protection and content length limits
