@@ -85,3 +85,7 @@ func (p *CommentablePlugin) MigrationSource() interface{} {
 func (p *CommentablePlugin) MigrationDependencies() []string {
 	return []string{"auth"}
 }
+
+func (p *CommentablePlugin) Dependencies() []string {
+	return []string{"auth"}
+}
