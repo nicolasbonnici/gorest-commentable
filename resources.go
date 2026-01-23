@@ -56,21 +56,28 @@ func (r *CommentResource) List(c *fiber.Ctx) error {
 	if err := filters.ParseFromQuery(queryParams); err != nil {
 		return pagination.SendPaginatedError(c, 400, err.Error())
 	}
-	whereClause, whereArgs := filters.BuildWhereClause()
 
 	ordering := filter.NewOrderSet(allowedFields)
 	if err := ordering.ParseFromQuery(queryParams); err != nil {
 		return pagination.SendPaginatedError(c, 400, err.Error())
 	}
-	orderByClause := ordering.BuildOrderByClause()
+
+	// Convert filter.OrderClause to crud.OrderByClause
+	filterOrderClauses := ordering.OrderClauses()
+	orderByClauses := make([]crud.OrderByClause, len(filterOrderClauses))
+	for i, oc := range filterOrderClauses {
+		orderByClauses[i] = crud.OrderByClause{
+			Column:    oc.Column,
+			Direction: oc.Direction,
+		}
+	}
 
 	result, err := r.CRUD.GetAllPaginated(auth.Context(c), crud.PaginationOptions{
-		Limit:         limit,
-		Offset:        offset,
-		IncludeCount:  includeCount,
-		WhereClause:   whereClause,
-		WhereArgs:     whereArgs,
-		OrderByClause: orderByClause,
+		Limit:        limit,
+		Offset:       offset,
+		IncludeCount: includeCount,
+		Conditions:   filters.Conditions(),
+		OrderBy:      orderByClauses,
 	})
 	if err != nil {
 		return pagination.SendPaginatedError(c, 500, err.Error())
