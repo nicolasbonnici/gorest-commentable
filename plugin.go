@@ -89,3 +89,16 @@ func (p *CommentablePlugin) MigrationDependencies() []string {
 func (p *CommentablePlugin) Dependencies() []string {
 	return []string{"auth"}
 }
+
+func (p *CommentablePlugin) GetOpenAPIResources() []plugin.OpenAPIResource {
+	return []plugin.OpenAPIResource{{
+		Name:          "comment",
+		PluralName:    "comments",
+		BasePath:      "/comments",
+		Tags:          []string{"Comments"},
+		ResponseModel: Comment{},
+		CreateModel:   CreateCommentRequest{},
+		UpdateModel:   UpdateCommentRequest{},
+		Description:   "Nested comment system",
+	}}
+}
