@@ -88,6 +88,95 @@ Content-Type: application/json
 DELETE /comments/:id
 ```
 
+## Advanced Filtering
+
+### Array Filters (Multiple Values)
+
+Get comments for multiple resource types using either syntax:
+
+**Without brackets (recommended for simplicity):**
+```bash
+GET /comments?commentable=post&commentable=article
+```
+
+**With brackets (explicit array syntax):**
+```bash
+GET /comments?commentable[]=post&commentable[]=article
+```
+
+Both generate SQL: `WHERE commentable IN ('post', 'article')`
+
+### Exclusion Filters (NOT IN)
+
+Exclude specific types (requires GoREST v0.5.0+):
+
+```bash
+GET /comments?commentable[nin]=draft&commentable[nin]=deleted
+```
+
+Generates SQL: `WHERE commentable NOT IN ('draft', 'deleted')`
+
+### Combining Filters
+
+Filters are combined with AND logic:
+
+```bash
+GET /comments?commentable=post&user_id=123e4567-e89b-12d3-a456-426614174000
+```
+
+Generates SQL: `WHERE commentable IN ('post') AND user_id = '123e4567...'`
+
+### Available Filter Fields
+
+- `commentable` - Resource type (validates against configured allowed_types)
+- `commentable_id` - Resource UUID
+- `user_id` - Comment author UUID
+- `parent_id` - Parent comment UUID (null for top-level comments)
+- `created_at[gte]` - Created on or after date
+- `created_at[lte]` - Created on or before date
+- `updated_at[gte]` - Updated on or after date
+- `updated_at[lte]` - Updated on or before date
+
+### Filter Operators
+
+- `field=value` - Equality (single value)
+- `field=val1&field=val2` - IN operator (multiple values)
+- `field[]=val1&field[]=val2` - IN operator (explicit array syntax)
+- `field[nin]=val1&field[nin]=val2` - NOT IN operator
+- `field[gt]=value` - Greater than
+- `field[gte]=value` - Greater than or equal
+- `field[lt]=value` - Less than
+- `field[lte]=value` - Less than or equal
+- `field[like]=pattern` - Pattern match (case-sensitive)
+- `field[ilike]=pattern` - Pattern match (case-insensitive)
+
+### Limits
+
+- Maximum 50 values per filter field
+- Invalid commentable types return 400 error with allowed types list
+
+### Examples
+
+**Get comments on posts and articles:**
+```bash
+GET /comments?commentable=post&commentable=article
+```
+
+**Get recent comments (last 7 days):**
+```bash
+GET /comments?created_at[gte]=2024-01-20T00:00:00Z
+```
+
+**Get comments excluding drafts:**
+```bash
+GET /comments?commentable[nin]=draft
+```
+
+**Combine filters with pagination and ordering:**
+```bash
+GET /comments?commentable=post&limit=20&order[created_at]=desc
+```
+
 ## Database Schema
 
 ```sql
