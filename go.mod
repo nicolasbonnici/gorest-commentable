@@ -34,5 +34,3 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 	modernc.org/libc v1.67.7 // indirect
 )
-
-replace github.com/nicolasbonnici/gorest => ../../gorest
