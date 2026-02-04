@@ -1,9 +1,11 @@
 package commentable
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	auth "github.com/nicolasbonnici/gorest-auth"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
@@ -11,6 +13,8 @@ import (
 	"github.com/nicolasbonnici/gorest/pagination"
 	"github.com/nicolasbonnici/gorest/response"
 )
+
+const MaxFilterValuesPerField = 50
 
 type CommentResource struct {
 	DB                 database.Database
@@ -36,6 +40,31 @@ func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config)
 	app.Delete("/comments/:id", res.Delete)
 }
 
+// validateCommentableFilter validates that commentable filter values are allowed types
+func (r *CommentResource) validateCommentableFilter(filters *filter.FilterSet) error {
+	for _, f := range filters.Filters {
+		if f.Field == "commentable" {
+			for _, val := range f.Values {
+				if !r.Config.IsAllowedType(val) {
+					return fmt.Errorf("invalid commentable type '%s' (allowed: %v)", val, r.Config.AllowedTypes)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// validateFilterLimits prevents abuse by limiting array filter sizes
+func (r *CommentResource) validateFilterLimits(filters *filter.FilterSet) error {
+	for _, f := range filters.Filters {
+		if len(f.Values) > MaxFilterValuesPerField {
+			return fmt.Errorf("too many filter values for field '%s' (max: %d, got: %d)",
+				f.Field, MaxFilterValuesPerField, len(f.Values))
+		}
+	}
+	return nil
+}
+
 func (r *CommentResource) List(c *fiber.Ctx) error {
 	limit := pagination.ParseIntQuery(c, "limit", r.PaginationLimit, r.PaginationMaxLimit)
 	page := pagination.ParseIntQuery(c, "page", 1, 10000)
@@ -54,6 +83,16 @@ func (r *CommentResource) List(c *fiber.Ctx) error {
 
 	filters := filter.NewFilterSet(allowedFields, r.DB.Dialect())
 	if err := filters.ParseFromQuery(queryParams); err != nil {
+		return pagination.SendPaginatedError(c, 400, err.Error())
+	}
+
+	// Validate commentable types
+	if err := r.validateCommentableFilter(filters); err != nil {
+		return pagination.SendPaginatedError(c, 400, err.Error())
+	}
+
+	// Validate filter limits
+	if err := r.validateFilterLimits(filters); err != nil {
 		return pagination.SendPaginatedError(c, 400, err.Error())
 	}
 
@@ -108,6 +147,7 @@ func (r *CommentResource) Create(c *fiber.Ctx) error {
 	}
 
 	var item Comment
+	item.Id = uuid.New().String() // Generate UUID before insert
 	item.CommentableId = req.CommentableId
 	item.Commentable = req.Commentable
 	item.ParentId = req.ParentId
