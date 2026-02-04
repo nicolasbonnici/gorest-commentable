@@ -74,14 +74,24 @@ func (r *CommentResource) List(c *fiber.Ctx) error {
 	offset := (page - 1) * limit
 	includeCount := c.Query("count", "true") != "false"
 
-	allowedFields := []string{"id", "user_id", "commentable_id", "commentable", "parent_id", "content", "updated_at", "created_at"}
+	// Field mapping: JSON field name -> DB column name
+	fieldMapping := map[string]string{
+		"id":            "id",
+		"userId":        "user_id",
+		"commentableId": "commentable_id",
+		"commentable":   "commentable",
+		"parentId":      "parent_id",
+		"content":       "content",
+		"updatedAt":     "updated_at",
+		"createdAt":     "created_at",
+	}
 
 	queryParams := make(url.Values)
 	for key, value := range c.Context().QueryArgs().All() {
 		queryParams.Add(string(key), string(value))
 	}
 
-	filters := filter.NewFilterSet(allowedFields, r.DB.Dialect())
+	filters := filter.NewFilterSetWithMapping(fieldMapping, r.DB.Dialect())
 	if err := filters.ParseFromQuery(queryParams); err != nil {
 		return pagination.SendPaginatedError(c, 400, err.Error())
 	}
@@ -96,7 +106,7 @@ func (r *CommentResource) List(c *fiber.Ctx) error {
 		return pagination.SendPaginatedError(c, 400, err.Error())
 	}
 
-	ordering := filter.NewOrderSet(allowedFields)
+	ordering := filter.NewOrderSetWithMapping(fieldMapping)
 	if err := ordering.ParseFromQuery(queryParams); err != nil {
 		return pagination.SendPaginatedError(c, 400, err.Error())
 	}
