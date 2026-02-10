@@ -83,11 +83,11 @@ func (p *CommentablePlugin) MigrationSource() interface{} {
 }
 
 func (p *CommentablePlugin) MigrationDependencies() []string {
-	return []string{"auth"}
+	return []string{"auth", "rbac"}
 }
 
 func (p *CommentablePlugin) Dependencies() []string {
-	return []string{"auth"}
+	return []string{"auth", "rbac"}
 }
 
 func (p *CommentablePlugin) GetOpenAPIResources() []plugin.OpenAPIResource {

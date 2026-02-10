@@ -99,5 +99,24 @@ func GetMigrations() migrations.MigrationSource {
 		},
 	)
 
+	builder.Add(
+		"20260210000001000",
+		"add_status_to_comments",
+		func(ctx context.Context, db database.Database) error {
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'moderated'))`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN status ENUM('published', 'moderated') NOT NULL DEFAULT 'published'`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'moderated'))`,
+			})
+		},
+		func(ctx context.Context, db database.Database) error {
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment DROP COLUMN status`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN status`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN status`,
+			})
+		},
+	)
+
 	return builder.Build()
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	auth "github.com/nicolasbonnici/gorest-auth"
+	rbac "github.com/nicolasbonnici/gorest-rbac"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/filter"
@@ -22,20 +23,40 @@ type CommentResource struct {
 	Config             *Config
 	PaginationLimit    int
 	PaginationMaxLimit int
+	Voter              rbac.Voter
 }
 
 func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config) {
+	rbacConfig := rbac.Config{
+		DefaultPolicy: rbac.DenyAll,
+		SuperuserRole: "admin",
+		RoleHierarchy: map[string][]string{
+			"writer":    {"moderator"},
+			"moderator": {"reader"},
+		},
+		CacheEnabled: true,
+		StrictMode:   false,
+	}
+
+	voter, err := rbac.NewVoter(rbacConfig)
+	if err != nil {
+		panic("failed to create RBAC voter: " + err.Error())
+	}
+
+	roleProvider := rbac.NewFiberRoleProvider("user_roles", "user_id")
+
 	res := &CommentResource{
 		DB:                 db,
 		CRUD:               crud.New[Comment](db),
 		Config:             config,
 		PaginationLimit:    config.PaginationLimit,
 		PaginationMaxLimit: config.MaxPaginationLimit,
+		Voter:              voter,
 	}
 
 	app.Get("/comments", res.List)
 	app.Get("/comments/:id", res.Get)
-	app.Post("/comments", res.Create)
+	app.Post("/comments", rbac.RequireRole(voter, roleProvider, "reader"), res.Create)
 	app.Put("/comments/:id", res.Update)
 	app.Delete("/comments/:id", res.Delete)
 }
@@ -156,18 +177,25 @@ func (r *CommentResource) Create(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	ctx := auth.Context(c)
+
 	var item Comment
 	item.Id = uuid.New().String() // Generate UUID before insert
 	item.CommentableId = req.CommentableId
 	item.Commentable = req.Commentable
 	item.ParentId = req.ParentId
 	item.Content = req.Content
+	item.Status = "published"
 
 	if user := auth.GetAuthenticatedUser(c); user != nil {
 		item.UserId = &user.UserID
 	}
 
-	ctx := auth.Context(c)
+	// Validate RBAC permissions
+	if err := r.Voter.ValidateWrite(ctx, &item); err != nil {
+		return c.Status(403).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	if err := r.CRUD.Create(ctx, item); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -193,16 +221,37 @@ func (r *CommentResource) Update(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	ctx := auth.Context(c)
+
 	// Get existing comment
-	existing, err := r.CRUD.GetByID(auth.Context(c), id)
+	existing, err := r.CRUD.GetByID(ctx, id)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Not found"})
 	}
 
-	// Update only the content
-	existing.Content = req.Content
+	// Check ownership for content updates
+	if req.Content != nil {
+		user := auth.GetAuthenticatedUser(c)
+		if user == nil || existing.UserId == nil || *existing.UserId != user.UserID {
+			return c.Status(403).JSON(fiber.Map{"error": "You can only edit your own comments"})
+		}
+		existing.Content = *req.Content
+	}
 
-	if err := r.CRUD.Update(auth.Context(c), id, *existing); err != nil {
+	// Update status if provided (RBAC will handle moderator permission check)
+	if req.Status != nil {
+		updateItem := *existing
+		updateItem.Status = *req.Status
+
+		// Validate RBAC permissions for status update
+		if err := r.Voter.ValidateWrite(ctx, &updateItem); err != nil {
+			return c.Status(403).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		existing.Status = *req.Status
+	}
+
+	if err := r.CRUD.Update(ctx, id, *existing); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -211,8 +260,23 @@ func (r *CommentResource) Update(c *fiber.Ctx) error {
 
 func (r *CommentResource) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	if err := r.CRUD.Delete(auth.Context(c), id); err != nil {
+	ctx := auth.Context(c)
+
+	// Get existing comment to check ownership
+	existing, err := r.CRUD.GetByID(ctx, id)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Not found"})
+	}
+
+	// Check ownership
+	user := auth.GetAuthenticatedUser(c)
+	if user == nil || existing.UserId == nil || *existing.UserId != user.UserID {
+		return c.Status(403).JSON(fiber.Map{"error": "You can only delete your own comments"})
+	}
+
+	if err := r.CRUD.Delete(ctx, id); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
+
 	return c.SendStatus(204)
 }

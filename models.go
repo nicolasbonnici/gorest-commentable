@@ -8,14 +8,15 @@ import (
 )
 
 type Comment struct {
-	Id            string     `json:"id,omitempty" db:"id"`
-	UserId        *string    `json:"userId,omitempty" db:"user_id"`
-	CommentableId string     `json:"commentableId" db:"commentable_id"`
-	Commentable   string     `json:"commentable" db:"commentable"`
-	ParentId      *string    `json:"parentId,omitempty" db:"parent_id"`
-	Content       string     `json:"content" db:"content"`
-	UpdatedAt     *time.Time `json:"updatedAt,omitempty" db:"updated_at"`
-	CreatedAt     *time.Time `json:"createdAt,omitempty" db:"created_at"`
+	Id            string     `json:"id,omitempty" db:"id" rbac:"read:*;write:none"`
+	UserId        *string    `json:"userId,omitempty" db:"user_id" rbac:"read:*;write:reader"`
+	CommentableId string     `json:"commentableId" db:"commentable_id" rbac:"read:*;write:reader"`
+	Commentable   string     `json:"commentable" db:"commentable" rbac:"read:*;write:reader"`
+	ParentId      *string    `json:"parentId,omitempty" db:"parent_id" rbac:"read:*;write:reader"`
+	Content       string     `json:"content" db:"content" rbac:"read:*;write:reader"`
+	Status        string     `json:"status" db:"status" rbac:"read:*;write:moderator"`
+	UpdatedAt     *time.Time `json:"updatedAt,omitempty" db:"updated_at" rbac:"read:*;write:none"`
+	CreatedAt     *time.Time `json:"createdAt,omitempty" db:"created_at" rbac:"read:*;write:none"`
 }
 
 func (Comment) TableName() string {
@@ -30,7 +31,8 @@ type CreateCommentRequest struct {
 }
 
 type UpdateCommentRequest struct {
-	Content string `json:"content" validate:"required"`
+	Content *string `json:"content,omitempty"`
+	Status  *string `json:"status,omitempty"`
 }
 
 func (r *CreateCommentRequest) Validate(config *Config) error {
@@ -54,17 +56,41 @@ func (r *CreateCommentRequest) Validate(config *Config) error {
 }
 
 func (r *UpdateCommentRequest) Validate(config *Config) error {
-	r.Content = strings.TrimSpace(r.Content)
-	if r.Content == "" {
-		return errors.New("content cannot be empty")
+	// At least one field must be provided
+	if r.Content == nil && r.Status == nil {
+		return errors.New("at least one field must be provided")
 	}
 
-	if len(r.Content) > config.MaxContentLength {
-		return errors.New("content exceeds maximum length")
+	// Validate content if provided
+	if r.Content != nil {
+		trimmed := strings.TrimSpace(*r.Content)
+		if trimmed == "" {
+			return errors.New("content cannot be empty")
+		}
+
+		if len(trimmed) > config.MaxContentLength {
+			return errors.New("content exceeds maximum length")
+		}
+
+		// Sanitize HTML to prevent XSS
+		sanitized := html.EscapeString(trimmed)
+		r.Content = &sanitized
 	}
 
-	// Sanitize HTML to prevent XSS
-	r.Content = html.EscapeString(r.Content)
+	// Validate status if provided
+	if r.Status != nil {
+		validStatuses := []string{"published", "draft", "moderated"}
+		valid := false
+		for _, s := range validStatuses {
+			if *r.Status == s {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return errors.New("invalid status value")
+		}
+	}
 
 	return nil
 }
