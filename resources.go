@@ -34,16 +34,16 @@ func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config)
 			"writer":    {"moderator"},
 			"moderator": {"reader"},
 		},
-		CacheEnabled: true,
-		StrictMode:   false,
+		CacheEnabled:       true,
+		CacheTTL:           300,
+		StrictMode:         false,
+		DefaultFieldPolicy: "deny",
 	}
 
 	voter, err := rbac.NewVoter(rbacConfig)
 	if err != nil {
 		panic("failed to create RBAC voter: " + err.Error())
 	}
-
-	roleProvider := rbac.NewFiberRoleProvider("user_roles", "user_id")
 
 	res := &CommentResource{
 		DB:                 db,
@@ -56,7 +56,7 @@ func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config)
 
 	app.Get("/comments", res.List)
 	app.Get("/comments/:id", res.Get)
-	app.Post("/comments", rbac.RequireRole(voter, roleProvider, "reader"), res.Create)
+	app.Post("/comments", res.Create)
 	app.Put("/comments/:id", res.Update)
 	app.Delete("/comments/:id", res.Delete)
 }
@@ -103,6 +103,9 @@ func (r *CommentResource) List(c *fiber.Ctx) error {
 		"commentable":   "commentable",
 		"parentId":      "parent_id",
 		"content":       "content",
+		"status":        "status",
+		"ipAddress":     "ip_address",
+		"userAgent":     "user_agent",
 		"updatedAt":     "updated_at",
 		"createdAt":     "created_at",
 	}
@@ -185,15 +188,16 @@ func (r *CommentResource) Create(c *fiber.Ctx) error {
 	item.Commentable = req.Commentable
 	item.ParentId = req.ParentId
 	item.Content = req.Content
-	item.Status = "published"
+	item.Status = "awaiting"
 
 	if user := auth.GetAuthenticatedUser(c); user != nil {
 		item.UserId = &user.UserID
-	}
-
-	// Validate RBAC permissions
-	if err := r.Voter.ValidateWrite(ctx, &item); err != nil {
-		return c.Status(403).JSON(fiber.Map{"error": err.Error()})
+	} else {
+		// For unauthenticated users, capture IP and User Agent
+		ipAddr := c.IP()
+		userAgent := c.Get("User-Agent")
+		item.IpAddress = &ipAddr
+		item.UserAgent = &userAgent
 	}
 
 	if err := r.CRUD.Create(ctx, item); err != nil {

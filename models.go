@@ -15,6 +15,8 @@ type Comment struct {
 	ParentId      *string    `json:"parentId,omitempty" db:"parent_id" rbac:"read:*;write:reader"`
 	Content       string     `json:"content" db:"content" rbac:"read:*;write:reader"`
 	Status        string     `json:"status" db:"status" rbac:"read:*;write:moderator"`
+	IpAddress     *string    `json:"ipAddress,omitempty" db:"ip_address" rbac:"read:moderator;write:none"`
+	UserAgent     *string    `json:"userAgent,omitempty" db:"user_agent" rbac:"read:moderator;write:none"`
 	UpdatedAt     *time.Time `json:"updatedAt,omitempty" db:"updated_at" rbac:"read:*;write:none"`
 	CreatedAt     *time.Time `json:"createdAt,omitempty" db:"created_at" rbac:"read:*;write:none"`
 }
@@ -79,7 +81,7 @@ func (r *UpdateCommentRequest) Validate(config *Config) error {
 
 	// Validate status if provided
 	if r.Status != nil {
-		validStatuses := []string{"published", "draft", "moderated"}
+		validStatuses := []string{"awaiting", "published", "draft", "moderated"}
 		valid := false
 		for _, s := range validStatuses {
 			if *r.Status == s {
