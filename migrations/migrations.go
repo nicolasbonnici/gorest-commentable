@@ -99,5 +99,43 @@ func GetMigrations() migrations.MigrationSource {
 		},
 	)
 
+	builder.Add(
+		"20260210000001000",
+		"add_status_to_comments",
+		func(ctx context.Context, db database.Database) error {
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'awaiting' CHECK (status IN ('awaiting', 'published', 'moderated', 'draft'))`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN status ENUM('awaiting', 'published', 'moderated', 'draft') NOT NULL DEFAULT 'awaiting'`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN status TEXT NOT NULL DEFAULT 'awaiting' CHECK (status IN ('awaiting', 'published', 'moderated', 'draft'))`,
+			})
+		},
+		func(ctx context.Context, db database.Database) error {
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment DROP COLUMN status`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN status`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN status`,
+			})
+		},
+	)
+
+	builder.Add(
+		"20260211000001000",
+		"add_ip_and_ua_to_comments",
+		func(ctx context.Context, db database.Database) error {
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment ADD COLUMN ip_address VARCHAR(45), ADD COLUMN user_agent TEXT`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN ip_address VARCHAR(45), ADD COLUMN user_agent TEXT`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN ip_address TEXT, ADD COLUMN user_agent TEXT`,
+			})
+		},
+		func(ctx context.Context, db database.Database) error {
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment DROP COLUMN ip_address, DROP COLUMN user_agent`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN ip_address, DROP COLUMN user_agent`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN ip_address, DROP COLUMN user_agent`,
+			})
+		},
+	)
+
 	return builder.Build()
 }
