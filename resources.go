@@ -247,6 +247,13 @@ func (r *CommentResource) Update(c *fiber.Ctx) error {
 		updateItem := *existing
 		updateItem.Status = *req.Status
 
+		// Clear read-only fields before RBAC validation
+		updateItem.Id = ""
+		updateItem.IpAddress = nil
+		updateItem.UserAgent = nil
+		updateItem.CreatedAt = nil
+		updateItem.UpdatedAt = nil
+
 		// Validate RBAC permissions for status update
 		if err := r.Voter.ValidateWrite(ctx, &updateItem); err != nil {
 			return c.Status(403).JSON(fiber.Map{"error": err.Error()})
