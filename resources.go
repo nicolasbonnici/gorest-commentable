@@ -188,7 +188,7 @@ func (r *CommentResource) Create(c *fiber.Ctx) error {
 	item.Commentable = req.Commentable
 	item.ParentId = req.ParentId
 	item.Content = req.Content
-	item.Status = "awaiting"
+	item.Status = r.Config.DefaultStatus
 
 	if user := auth.GetAuthenticatedUser(c); user != nil {
 		item.UserId = &user.UserID

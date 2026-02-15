@@ -2,10 +2,25 @@ package commentable
 
 import (
 	"errors"
+	"fmt"
 	"html"
 	"strings"
 	"time"
 )
+
+const (
+	StatusAwaiting  = "awaiting"
+	StatusPublished = "published"
+	StatusDraft     = "draft"
+	StatusModerated = "moderated"
+)
+
+var ValidStatuses = []string{
+	StatusAwaiting,
+	StatusPublished,
+	StatusDraft,
+	StatusModerated,
+}
 
 type Comment struct {
 	Id            string     `json:"id,omitempty" db:"id" rbac:"read:*;write:none"`
@@ -81,16 +96,15 @@ func (r *UpdateCommentRequest) Validate(config *Config) error {
 
 	// Validate status if provided
 	if r.Status != nil {
-		validStatuses := []string{"awaiting", "published", "draft", "moderated"}
 		valid := false
-		for _, s := range validStatuses {
+		for _, s := range ValidStatuses {
 			if *r.Status == s {
 				valid = true
 				break
 			}
 		}
 		if !valid {
-			return errors.New("invalid status value")
+			return fmt.Errorf("invalid status value (allowed: %v)", ValidStatuses)
 		}
 	}
 
