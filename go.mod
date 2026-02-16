@@ -5,9 +5,9 @@ go 1.25.1
 require (
 	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/google/uuid v1.6.0
-	github.com/nicolasbonnici/gorest v0.4.9
+	github.com/nicolasbonnici/gorest v0.4.10
 	github.com/nicolasbonnici/gorest-auth v0.1.7
-	github.com/nicolasbonnici/gorest-rbac v0.1.1
+	github.com/nicolasbonnici/gorest-rbac v0.1.4
 )
 
 require (
