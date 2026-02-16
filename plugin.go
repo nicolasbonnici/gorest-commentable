@@ -60,6 +60,10 @@ func (p *CommentablePlugin) Initialize(config map[string]interface{}) error {
 		p.config.MaxNestingDepth = maxNestingDepth
 	}
 
+	if defaultStatus, ok := config["default_status"].(string); ok {
+		p.config.DefaultStatus = defaultStatus
+	}
+
 	return p.config.Validate()
 }
 

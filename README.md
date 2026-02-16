@@ -49,6 +49,7 @@ plugins:
       max_pagination_limit: 100
       enable_nesting: true
       max_nesting_depth: 10
+      default_status: "awaiting"
 ```
 
 ### Configuration Options
@@ -61,6 +62,7 @@ plugins:
 | `max_pagination_limit` | `int` | `100` | Maximum allowed pagination limit |
 | `enable_nesting` | `bool` | `true` | Allow nested/threaded comments |
 | `max_nesting_depth` | `int` | `10` | Maximum nesting depth for replies |
+| `default_status` | `string` | `"awaiting"` | Default status for new comments (awaiting, published, draft, moderated) |
 
 ## API Endpoints
 

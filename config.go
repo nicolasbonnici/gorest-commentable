@@ -15,6 +15,7 @@ type Config struct {
 	MaxPaginationLimit int      `json:"max_pagination_limit" yaml:"max_pagination_limit"`
 	EnableNesting      bool     `json:"enable_nesting" yaml:"enable_nesting"`
 	MaxNestingDepth    int      `json:"max_nesting_depth" yaml:"max_nesting_depth"`
+	DefaultStatus      string   `json:"default_status" yaml:"default_status"`
 }
 
 func DefaultConfig() Config {
@@ -25,6 +26,7 @@ func DefaultConfig() Config {
 		MaxPaginationLimit: 100,
 		EnableNesting:      true,
 		MaxNestingDepth:    10,
+		DefaultStatus:      StatusAwaiting,
 	}
 }
 
@@ -55,6 +57,22 @@ func (c *Config) Validate() error {
 
 	if c.MaxNestingDepth < 1 || c.MaxNestingDepth > 100 {
 		return errors.New("max_nesting_depth must be between 1 and 100")
+	}
+
+	// Validate default status
+	if c.DefaultStatus == "" {
+		return errors.New("default_status cannot be empty")
+	}
+
+	validStatus := false
+	for _, status := range ValidStatuses {
+		if c.DefaultStatus == status {
+			validStatus = true
+			break
+		}
+	}
+	if !validStatus {
+		return fmt.Errorf("invalid default_status: %s (allowed: %v)", c.DefaultStatus, ValidStatuses)
 	}
 
 	return nil
