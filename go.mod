@@ -7,14 +7,14 @@ toolchain go1.26.0
 require (
 	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/google/uuid v1.6.0
-	github.com/nicolasbonnici/gorest v0.4.9
-	github.com/nicolasbonnici/gorest-auth v0.1.7
-	github.com/nicolasbonnici/gorest-rbac v0.1.1
+	github.com/nicolasbonnici/gorest v0.4.11
+	github.com/nicolasbonnici/gorest-auth v0.1.8
+	github.com/nicolasbonnici/gorest-rbac v0.1.4
 )
 
 require (
 	github.com/andybalholm/brotli v1.2.0 // indirect
-	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
