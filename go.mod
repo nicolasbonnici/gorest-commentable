@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/nicolasbonnici/gorest v0.4.11
 	github.com/nicolasbonnici/gorest-auth v0.1.10
-	github.com/nicolasbonnici/gorest-rbac v0.1.4
+	github.com/nicolasbonnici/gorest-rbac v0.1.5
 )
 
 require (
