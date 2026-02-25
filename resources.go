@@ -61,6 +61,14 @@ func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config)
 	app.Delete("/comments/:id", res.Delete)
 }
 
+func (r *CommentResource) isModerator(c *fiber.Ctx) bool {
+	roles, ok := rbac.GetRoles(auth.Context(c))
+	if !ok || len(roles) == 0 {
+		return false
+	}
+	return r.Voter.IsSuperuser(roles) || rbac.HasRole(roles, "moderator", r.Voter.GetConfig().RoleHierarchy)
+}
+
 // validateCommentableFilter validates that commentable filter values are allowed types
 func (r *CommentResource) validateCommentableFilter(filters *filter.FilterSet) error {
 	for _, f := range filters.Filters {
@@ -130,6 +138,14 @@ func (r *CommentResource) List(c *fiber.Ctx) error {
 		return pagination.SendPaginatedError(c, 400, err.Error())
 	}
 
+	if !r.isModerator(c) {
+		filters.Filters = append(filters.Filters, filter.Filter{
+			Field:    "status",
+			Operator: filter.OpEqual,
+			Values:   []string{StatusPublished},
+		})
+	}
+
 	ordering := filter.NewOrderSetWithMapping(fieldMapping)
 	if err := ordering.ParseFromQuery(queryParams); err != nil {
 		return pagination.SendPaginatedError(c, 400, err.Error())
@@ -166,6 +182,10 @@ func (r *CommentResource) Get(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"error": "Not found"})
 	}
 
+	if item.Status != StatusPublished && !r.isModerator(c) {
+		return c.Status(404).JSON(fiber.Map{"error": "Not found"})
+	}
+
 	return response.SendFormatted(c, 200, item)
 }
 
@@ -175,7 +195,6 @@ func (r *CommentResource) Create(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	// Validate request
 	if err := req.Validate(r.Config); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -193,7 +212,7 @@ func (r *CommentResource) Create(c *fiber.Ctx) error {
 	if user := auth.GetAuthenticatedUser(c); user != nil {
 		item.UserId = &user.UserID
 	} else {
-		// For unauthenticated users, capture IP and User Agent
+		// For unauthenticated users, store IP and User Agent
 		ipAddr := c.IP()
 		userAgent := c.Get("User-Agent")
 		item.IpAddress = &ipAddr
@@ -220,20 +239,17 @@ func (r *CommentResource) Update(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	// Validate request
 	if err := req.Validate(r.Config); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	ctx := auth.Context(c)
 
-	// Get existing comment
 	existing, err := r.CRUD.GetByID(ctx, id)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Not found"})
 	}
 
-	// Check ownership for content updates
 	if req.Content != nil {
 		user := auth.GetAuthenticatedUser(c)
 		if user == nil || existing.UserId == nil || *existing.UserId != user.UserID {
@@ -254,7 +270,6 @@ func (r *CommentResource) Update(c *fiber.Ctx) error {
 		updateItem.CreatedAt = nil
 		updateItem.UpdatedAt = nil
 
-		// Validate RBAC permissions for status update
 		if err := r.Voter.ValidateWrite(ctx, &updateItem); err != nil {
 			return c.Status(403).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -273,13 +288,11 @@ func (r *CommentResource) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	ctx := auth.Context(c)
 
-	// Get existing comment to check ownership
 	existing, err := r.CRUD.GetByID(ctx, id)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Not found"})
 	}
 
-	// Check ownership
 	user := auth.GetAuthenticatedUser(c)
 	if user == nil || existing.UserId == nil || *existing.UserId != user.UserID {
 		return c.Status(403).JSON(fiber.Map{"error": "You can only delete your own comments"})

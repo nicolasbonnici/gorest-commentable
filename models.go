@@ -66,7 +66,6 @@ func (r *CreateCommentRequest) Validate(config *Config) error {
 		return errors.New("content exceeds maximum length")
 	}
 
-	// Sanitize HTML to prevent XSS
 	r.Content = html.EscapeString(r.Content)
 
 	return nil
@@ -78,7 +77,6 @@ func (r *UpdateCommentRequest) Validate(config *Config) error {
 		return errors.New("at least one field must be provided")
 	}
 
-	// Validate content if provided
 	if r.Content != nil {
 		trimmed := strings.TrimSpace(*r.Content)
 		if trimmed == "" {
@@ -89,12 +87,10 @@ func (r *UpdateCommentRequest) Validate(config *Config) error {
 			return errors.New("content exceeds maximum length")
 		}
 
-		// Sanitize HTML to prevent XSS
 		sanitized := html.EscapeString(trimmed)
 		r.Content = &sanitized
 	}
 
-	// Validate status if provided
 	if r.Status != nil {
 		valid := false
 		for _, s := range ValidStatuses {
