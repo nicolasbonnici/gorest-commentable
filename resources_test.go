@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/nicolasbonnici/gorest/filter"
 	rbac "github.com/nicolasbonnici/gorest-rbac"
+	"github.com/nicolasbonnici/gorest/filter"
 )
 
 func TestCommentResource_validateCommentableFilter(t *testing.T) {
