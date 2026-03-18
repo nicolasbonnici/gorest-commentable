@@ -96,38 +96,22 @@ func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment
 		return fiber.NewError(404, "Comment not found")
 	}
 
-	user := auth.GetAuthenticatedUser(c)
-	if user != nil && existing.UserId != nil && *existing.UserId != user.UserID {
-		if !h.isModerator(c) {
-			return fiber.NewError(403, "You can only edit your own comments")
-		}
+	if err := h.checkOwnership(c, existing); err != nil {
+		return err
 	}
 
 	if dto.Content != nil {
-		trimmed := strings.TrimSpace(*dto.Content)
-		if trimmed == "" {
-			return fiber.NewError(400, "content cannot be empty")
+		sanitized, err := h.validateAndSanitizeContent(*dto.Content)
+		if err != nil {
+			return err
 		}
-
-		if len(trimmed) > h.config.MaxContentLength {
-			return fiber.NewError(400, "content exceeds maximum length")
-		}
-
-		sanitized := html.EscapeString(trimmed)
 		model.Content = sanitized
 		existing.Content = sanitized
 	}
 
 	if dto.Status != nil {
-		valid := false
-		for _, s := range ValidStatuses {
-			if *dto.Status == s {
-				valid = true
-				break
-			}
-		}
-		if !valid {
-			return fiber.NewError(400, fmt.Sprintf("invalid status value (allowed: %v)", ValidStatuses))
+		if err := h.validateStatus(*dto.Status); err != nil {
+			return err
 		}
 		model.Status = *dto.Status
 		existing.Status = *dto.Status
@@ -146,6 +130,38 @@ func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment
 	}
 
 	return nil
+}
+
+func (h *CommentHooks) checkOwnership(c *fiber.Ctx, existing *Comment) error {
+	user := auth.GetAuthenticatedUser(c)
+	if user != nil && existing.UserId != nil && *existing.UserId != user.UserID {
+		if !h.isModerator(c) {
+			return fiber.NewError(403, "You can only edit your own comments")
+		}
+	}
+	return nil
+}
+
+func (h *CommentHooks) validateAndSanitizeContent(content string) (string, error) {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return "", fiber.NewError(400, "content cannot be empty")
+	}
+
+	if len(trimmed) > h.config.MaxContentLength {
+		return "", fiber.NewError(400, "content exceeds maximum length")
+	}
+
+	return html.EscapeString(trimmed), nil
+}
+
+func (h *CommentHooks) validateStatus(status string) error {
+	for _, s := range ValidStatuses {
+		if status == s {
+			return nil
+		}
+	}
+	return fiber.NewError(400, fmt.Sprintf("invalid status value (allowed: %v)", ValidStatuses))
 }
 
 func (h *CommentHooks) Delete(c *fiber.Ctx, id any) error {
