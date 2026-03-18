@@ -100,9 +100,9 @@ func (p *CommentablePlugin) GetOpenAPIResources() []plugin.OpenAPIResource {
 		PluralName:    "comments",
 		BasePath:      "/comments",
 		Tags:          []string{"Comments"},
-		ResponseModel: Comment{},
-		CreateModel:   CreateCommentRequest{},
-		UpdateModel:   UpdateCommentRequest{},
+		ResponseModel: CommentResponseDTO{},
+		CreateModel:   CommentCreateDTO{},
+		UpdateModel:   CommentUpdateDTO{},
 		Description:   "Nested comment system",
 	}}
 }
