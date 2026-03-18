@@ -64,4 +64,3 @@ func TestCommentHooks_isModerator(t *testing.T) {
 		})
 	}
 }
-

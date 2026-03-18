@@ -29,7 +29,7 @@ func NewCommentHooks(db database.Database, config *Config, voter rbac.Voter) *Co
 	}
 }
 
-func (h *CommentHooks) CreateHook(c *fiber.Ctx, dto CommentCreateDTO, model *Comment) error {
+func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment) error {
 	if !h.config.IsAllowedType(dto.Commentable) {
 		return fiber.NewError(400, "commentable type is not allowed")
 	}
@@ -83,7 +83,7 @@ func (h *CommentHooks) CreateHook(c *fiber.Ctx, dto CommentCreateDTO, model *Com
 	return nil
 }
 
-func (h *CommentHooks) UpdateHook(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment) error {
+func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment) error {
 	if dto.Content == nil && dto.Status == nil {
 		return fiber.NewError(400, "at least one field must be provided")
 	}
@@ -148,7 +148,7 @@ func (h *CommentHooks) UpdateHook(c *fiber.Ctx, dto CommentUpdateDTO, model *Com
 	return nil
 }
 
-func (h *CommentHooks) DeleteHook(c *fiber.Ctx, id any) error {
+func (h *CommentHooks) Delete(c *fiber.Ctx, id any) error {
 	ctx := auth.Context(c)
 
 	existing, err := h.getComment(ctx, id)
@@ -166,11 +166,11 @@ func (h *CommentHooks) DeleteHook(c *fiber.Ctx, id any) error {
 	return nil
 }
 
-func (h *CommentHooks) GetByIDHook(c *fiber.Ctx, id any) error {
+func (h *CommentHooks) GetByID(c *fiber.Ctx, id any) error {
 	return nil
 }
 
-func (h *CommentHooks) GetAllHook(c *fiber.Ctx, conditions *[]query.Condition, orderBy *[]crud.OrderByClause) error {
+func (h *CommentHooks) GetAll(c *fiber.Ctx, conditions *[]query.Condition, orderBy *[]crud.OrderByClause) error {
 	if !h.isModerator(c) {
 		*conditions = append(*conditions, query.Eq("status", StatusPublished))
 	}

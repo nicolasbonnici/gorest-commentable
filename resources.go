@@ -60,11 +60,11 @@ func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config)
 		FieldMap:           fieldMapping,
 		AllowedFields:      []string{"id", "userId", "commentableId", "commentable", "parentId", "content", "status", "ipAddress", "userAgent", "updatedAt", "createdAt"},
 	}).
-		WithCreateHook(hooks.CreateHook).
-		WithUpdateHook(hooks.UpdateHook).
-		WithDeleteHook(hooks.DeleteHook).
-		WithGetByIDHook(hooks.GetByIDHook).
-		WithGetAllHook(hooks.GetAllHook)
+		WithCreateHook(hooks.Create).
+		WithUpdateHook(hooks.Update).
+		WithDeleteHook(hooks.Delete).
+		WithGetByIDHook(hooks.GetByID).
+		WithGetAllHook(hooks.GetAll)
 
 	res := &CommentResource{
 		processor: proc,
