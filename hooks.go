@@ -34,6 +34,14 @@ func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment
 		return fiber.NewError(400, "commentable type is not allowed")
 	}
 
+	// Check if anonymous comments are allowed
+	if !h.config.AllowAnonymous {
+		user := auth.GetAuthenticatedUser(c)
+		if user == nil {
+			return fiber.NewError(401, "authentication required to comment")
+		}
+	}
+
 	content := strings.TrimSpace(dto.Content)
 	if content == "" {
 		return fiber.NewError(400, "content cannot be empty")
@@ -134,11 +142,26 @@ func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment
 
 func (h *CommentHooks) checkOwnership(c *fiber.Ctx, existing *Comment) error {
 	user := auth.GetAuthenticatedUser(c)
-	if user != nil && existing.UserId != nil && *existing.UserId != user.UserID {
+
+	// Anonymous comment - only moderators can edit
+	if existing.UserId == nil {
+		if !h.isModerator(c) {
+			return fiber.NewError(403, "Only moderators can edit anonymous comments")
+		}
+		return nil
+	}
+
+	// Authenticated comment - must be owner or moderator
+	if user == nil {
+		return fiber.NewError(403, "You must be authenticated to edit this comment")
+	}
+
+	if *existing.UserId != user.UserID {
 		if !h.isModerator(c) {
 			return fiber.NewError(403, "You can only edit your own comments")
 		}
 	}
+
 	return nil
 }
 
@@ -173,7 +196,21 @@ func (h *CommentHooks) Delete(c *fiber.Ctx, id any) error {
 	}
 
 	user := auth.GetAuthenticatedUser(c)
-	if user != nil && existing.UserId != nil && *existing.UserId != user.UserID {
+
+	// Anonymous comment - only moderators can delete
+	if existing.UserId == nil {
+		if !h.isModerator(c) {
+			return fiber.NewError(403, "Only moderators can delete anonymous comments")
+		}
+		return nil
+	}
+
+	// Authenticated comment - must be owner or moderator
+	if user == nil {
+		return fiber.NewError(403, "You must be authenticated to delete this comment")
+	}
+
+	if *existing.UserId != user.UserID {
 		if !h.isModerator(c) {
 			return fiber.NewError(403, "You can only delete your own comments")
 		}
