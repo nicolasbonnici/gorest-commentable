@@ -175,10 +175,11 @@ func TestCommentHooks_CreateAuthenticated(t *testing.T) {
 	app := fiber.New()
 	var createdComment *Comment
 	app.Post("/", func(c *fiber.Ctx) error {
-		// Set authenticated user using Locals (how auth package stores it)
+		// Set authenticated user with reader role
 		userId := "user-123"
 		c.Locals("user_id", userId)
-		c.SetUserContext(context.Background())
+		ctx := rbac.WithRoles(context.Background(), []string{"reader"})
+		c.SetUserContext(ctx)
 
 		dto := CommentCreateDTO{
 			Commentable:   "post",
