@@ -64,6 +64,10 @@ func (p *CommentablePlugin) Initialize(config map[string]interface{}) error {
 		p.config.DefaultStatus = defaultStatus
 	}
 
+	if allowAnonymous, ok := config["allow_anonymous"].(bool); ok {
+		p.config.AllowAnonymous = allowAnonymous
+	}
+
 	return p.config.Validate()
 }
 

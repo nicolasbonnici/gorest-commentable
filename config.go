@@ -16,6 +16,7 @@ type Config struct {
 	EnableNesting      bool     `json:"enable_nesting" yaml:"enable_nesting"`
 	MaxNestingDepth    int      `json:"max_nesting_depth" yaml:"max_nesting_depth"`
 	DefaultStatus      string   `json:"default_status" yaml:"default_status"`
+	AllowAnonymous     bool     `json:"allow_anonymous" yaml:"allow_anonymous"`
 }
 
 func DefaultConfig() Config {
@@ -27,6 +28,7 @@ func DefaultConfig() Config {
 		EnableNesting:      true,
 		MaxNestingDepth:    10,
 		DefaultStatus:      StatusAwaiting,
+		AllowAnonymous:     true,
 	}
 }
 

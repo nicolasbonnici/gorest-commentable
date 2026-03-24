@@ -16,22 +16,30 @@ import (
 )
 
 type CommentHooks struct {
-	db     database.Database
-	config *Config
-	voter  rbac.Voter
+	db         database.Database
+	config     *Config
+	voter      rbac.Voter
+	getComment func(ctx context.Context, id any) (*Comment, error)
 }
 
 func NewCommentHooks(db database.Database, config *Config, voter rbac.Voter) *CommentHooks {
-	return &CommentHooks{
+	h := &CommentHooks{
 		db:     db,
 		config: config,
 		voter:  voter,
 	}
+	h.getComment = h.defaultGetComment
+	return h
 }
 
 func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment) error {
 	if !h.config.IsAllowedType(dto.Commentable) {
 		return fiber.NewError(400, "commentable type is not allowed")
+	}
+
+	user := auth.GetAuthenticatedUser(c)
+	if !h.config.AllowAnonymous && user == nil {
+		return fiber.NewError(401, "authentication required to comment")
 	}
 
 	content := strings.TrimSpace(dto.Content)
@@ -45,7 +53,6 @@ func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment
 
 	model.Content = html.EscapeString(content)
 
-	user := auth.GetAuthenticatedUser(c)
 	if user != nil {
 		model.UserId = &user.UserID
 	}
@@ -62,23 +69,26 @@ func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment
 	ctx := auth.Context(c)
 	tempId := model.Id
 	tempUserId := model.UserId
+	tempIpAddress := model.IpAddress
+	tempUserAgent := model.UserAgent
+
+	// Clear system fields before RBAC validation to prevent tampering
 	model.Id = ""
 	model.UserId = nil
 	model.IpAddress = nil
 	model.UserAgent = nil
 
-	if err := h.voter.ValidateWrite(ctx, model); err != nil {
-		return fiber.NewError(403, fmt.Sprintf("insufficient permissions: %v", err))
+	if user != nil {
+		if err := h.voter.ValidateWrite(ctx, model); err != nil {
+			return fiber.NewError(403, fmt.Sprintf("insufficient permissions: %v", err))
+		}
 	}
 
+	// Restore system fields with trusted values
 	model.Id = tempId
 	model.UserId = tempUserId
-	if ipAddress != "" {
-		model.IpAddress = &ipAddress
-	}
-	if userAgent != "" {
-		model.UserAgent = &userAgent
-	}
+	model.IpAddress = tempIpAddress
+	model.UserAgent = tempUserAgent
 
 	return nil
 }
@@ -133,13 +143,25 @@ func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment
 }
 
 func (h *CommentHooks) checkOwnership(c *fiber.Ctx, existing *Comment) error {
-	user := auth.GetAuthenticatedUser(c)
-	if user != nil && existing.UserId != nil && *existing.UserId != user.UserID {
-		if !h.isModerator(c) {
-			return fiber.NewError(403, "You can only edit your own comments")
+	// Anonymous comment - only moderators can edit
+	if existing.UserId == nil {
+		if h.isModerator(c) {
+			return nil
 		}
+		return fiber.NewError(403, "Only moderators can edit anonymous comments")
 	}
-	return nil
+
+	// Authenticated comment - must be owner or moderator
+	user := auth.GetAuthenticatedUser(c)
+	if user == nil {
+		return fiber.NewError(403, "You must be authenticated to edit this comment")
+	}
+
+	if *existing.UserId == user.UserID || h.isModerator(c) {
+		return nil
+	}
+
+	return fiber.NewError(403, "You can only edit your own comments")
 }
 
 func (h *CommentHooks) validateAndSanitizeContent(content string) (string, error) {
@@ -172,14 +194,25 @@ func (h *CommentHooks) Delete(c *fiber.Ctx, id any) error {
 		return fiber.NewError(404, "Comment not found")
 	}
 
-	user := auth.GetAuthenticatedUser(c)
-	if user != nil && existing.UserId != nil && *existing.UserId != user.UserID {
-		if !h.isModerator(c) {
-			return fiber.NewError(403, "You can only delete your own comments")
+	// Anonymous comment - only moderators can delete
+	if existing.UserId == nil {
+		if h.isModerator(c) {
+			return nil
 		}
+		return fiber.NewError(403, "Only moderators can delete anonymous comments")
 	}
 
-	return nil
+	// Authenticated comment - must be owner or moderator
+	user := auth.GetAuthenticatedUser(c)
+	if user == nil {
+		return fiber.NewError(403, "You must be authenticated to delete this comment")
+	}
+
+	if *existing.UserId == user.UserID || h.isModerator(c) {
+		return nil
+	}
+
+	return fiber.NewError(403, "You can only delete your own comments")
 }
 
 func (h *CommentHooks) GetByID(c *fiber.Ctx, id any) error {
@@ -201,7 +234,7 @@ func (h *CommentHooks) isModerator(c *fiber.Ctx) bool {
 	return h.voter.IsSuperuser(roles) || rbac.HasRole(roles, "moderator", h.voter.GetConfig().RoleHierarchy)
 }
 
-func (h *CommentHooks) getComment(ctx context.Context, id any) (*Comment, error) {
+func (h *CommentHooks) defaultGetComment(ctx context.Context, id any) (*Comment, error) {
 	var comment Comment
 	idStr, ok := id.(string)
 	if !ok {
