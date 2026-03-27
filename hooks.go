@@ -220,7 +220,9 @@ func (h *CommentHooks) GetByID(c *fiber.Ctx, id any) error {
 }
 
 func (h *CommentHooks) GetAll(c *fiber.Ctx, conditions *[]query.Condition, orderBy *[]crud.OrderByClause) error {
-	if !h.isModerator(c) {
+	if h.isModerator(c) {
+		*conditions = append(*conditions, query.In("status", StatusPublished, StatusAwaiting))
+	} else {
 		*conditions = append(*conditions, query.Eq("status", StatusPublished))
 	}
 	return nil
