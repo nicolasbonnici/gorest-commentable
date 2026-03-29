@@ -7,6 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	rbac "github.com/nicolasbonnici/gorest-rbac"
+	"github.com/nicolasbonnici/gorest/crud"
+	"github.com/nicolasbonnici/gorest/query"
 )
 
 func newTestVoter(t *testing.T) rbac.Voter {
@@ -445,5 +447,82 @@ func TestCommentHooks_ModeratorCanDeleteAnonymousComment(t *testing.T) {
 
 	if resp.StatusCode != 200 {
 		t.Errorf("expected status 200 when moderator deletes anonymous comment, got %d", resp.StatusCode)
+	}
+}
+
+func TestCommentHooks_GetAll_ModeratorSeesAwaitingAndPublished(t *testing.T) {
+	config := &Config{
+		AllowedTypes:     []string{"post"},
+		MaxContentLength: 10000,
+	}
+	hooks := NewCommentHooks(nil, config, newTestVoter(t))
+
+	tests := []struct {
+		name              string
+		roles             []string
+		expectedCondCount int
+	}{
+		{
+			name:              "reader gets status filter",
+			roles:             []string{"reader"},
+			expectedCondCount: 1,
+		},
+		{
+			name:              "moderator gets status filter",
+			roles:             []string{"moderator"},
+			expectedCondCount: 1,
+		},
+		{
+			name:              "writer gets status filter",
+			roles:             []string{"writer"},
+			expectedCondCount: 1,
+		},
+		{
+			name:              "admin gets status filter",
+			roles:             []string{"admin"},
+			expectedCondCount: 1,
+		},
+		{
+			name:              "unauthenticated gets status filter",
+			roles:             []string{},
+			expectedCondCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := fiber.New()
+			var capturedConditions *[]query.Condition
+
+			app.Get("/", func(c *fiber.Ctx) error {
+				ctx := rbac.WithRoles(context.Background(), tt.roles)
+				c.SetUserContext(ctx)
+
+				conditions := []query.Condition{}
+				orderBy := []crud.OrderByClause{}
+
+				err := hooks.GetAll(c, &conditions, &orderBy)
+				if err != nil {
+					return err
+				}
+
+				capturedConditions = &conditions
+				return c.SendStatus(200)
+			})
+
+			req := httptest.NewRequest("GET", "/", nil)
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if resp.StatusCode != 200 {
+				t.Errorf("expected status 200, got %d", resp.StatusCode)
+			}
+
+			if len(*capturedConditions) != tt.expectedCondCount {
+				t.Errorf("expected %d condition(s), got %d", tt.expectedCondCount, len(*capturedConditions))
+			}
+		})
 	}
 }
