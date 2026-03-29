@@ -110,6 +110,9 @@ func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment
 		return err
 	}
 
+	// Populate model from existing
+	*model = *existing
+
 	if dto.Content != nil {
 		sanitized, err := h.validateAndSanitizeContent(*dto.Content)
 		if err != nil {
@@ -251,11 +254,11 @@ func (h *CommentHooks) defaultGetComment(ctx context.Context, id any) (*Comment,
 		&comment.Commentable,
 		&comment.ParentId,
 		&comment.Content,
+		&comment.UpdatedAt,
+		&comment.CreatedAt,
 		&comment.Status,
 		&comment.IpAddress,
 		&comment.UserAgent,
-		&comment.UpdatedAt,
-		&comment.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
