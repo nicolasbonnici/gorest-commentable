@@ -8,8 +8,8 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/google/uuid v1.6.0
 	github.com/nicolasbonnici/gorest v0.4.13
-	github.com/nicolasbonnici/gorest-auth v0.1.15
-	github.com/nicolasbonnici/gorest-rbac v0.1.10
+	github.com/nicolasbonnici/gorest-auth v0.1.16
+	github.com/nicolasbonnici/gorest-rbac v0.1.11
 )
 
 require (
@@ -27,7 +27,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.70.0 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 )
