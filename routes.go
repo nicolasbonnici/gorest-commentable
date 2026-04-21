@@ -5,6 +5,6 @@ import (
 	"github.com/nicolasbonnici/gorest/database"
 )
 
-func RegisterRoutes(app *fiber.App, db database.Database, config *Config) {
-	RegisterCommentRoutes(app, db, config)
+func RegisterRoutes(router fiber.Router, db database.Database, config *Config) {
+	RegisterCommentRoutes(router, db, config)
 }

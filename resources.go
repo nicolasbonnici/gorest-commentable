@@ -14,7 +14,7 @@ type CommentResource struct {
 	processor processor.Processor[Comment, CommentCreateDTO, CommentUpdateDTO, CommentResponseDTO]
 }
 
-func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config) {
+func RegisterCommentRoutes(router fiber.Router, db database.Database, config *Config) {
 	rbacConfig := rbac.Config{
 		DefaultPolicy: rbac.DenyAll,
 		SuperuserRole: "admin",
@@ -70,11 +70,11 @@ func RegisterCommentRoutes(app *fiber.App, db database.Database, config *Config)
 		processor: proc,
 	}
 
-	app.Get("/comments", res.GetAll)
-	app.Get("/comments/:id", res.GetByID)
-	app.Post("/comments", res.Create)
-	app.Put("/comments/:id", res.Update)
-	app.Delete("/comments/:id", res.Delete)
+	router.Get("/comments", res.GetAll)
+	router.Get("/comments/:id", res.GetByID)
+	router.Post("/comments", res.Create)
+	router.Put("/comments/:id", res.Update)
+	router.Delete("/comments/:id", res.Delete)
 }
 
 func (r *CommentResource) Create(c *fiber.Ctx) error {
