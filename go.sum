@@ -46,8 +46,8 @@ github.com/mattn/go-runewidth v0.0.23 h1:7ykA0T0jkPpzSvMS5i9uoNn2Xy3R383f9HDx3Ry
 github.com/mattn/go-runewidth v0.0.23/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=
 github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/nicolasbonnici/gorest v0.5.1 h1:0Qs5I7g+pggJ5iqYkxJZYWG5tgn5fMEoATHwcYVcgus=
-github.com/nicolasbonnici/gorest v0.5.1/go.mod h1:zHB+Y0DUxHDk6/9fv0f2MOsWG/yRO5GzOaAq0CLxPwE=
+github.com/nicolasbonnici/gorest v0.5.2 h1:E1bQ002Iw0uROszPJJWmOWOfOquQDh+JcwwWn1LWiHs=
+github.com/nicolasbonnici/gorest v0.5.2/go.mod h1:TePj24yqru32rY1PjbLe5cAemaWIWLp9MmNCNrFLToA=
 github.com/nicolasbonnici/gorest-auth v0.1.21 h1:6eRQVJrBl1fuA8k/LkLxgqQ00TZs/IsR09tMqFTHZ1Q=
 github.com/nicolasbonnici/gorest-auth v0.1.21/go.mod h1:+/O7Psfitm9bY96fuWCIY5SKu018jrQTAFK5bRVqOog=
 github.com/nicolasbonnici/gorest-rbac v0.1.15 h1:dHfDyp8/1xvZ1nrBOeYX1/qbPD8xNQ7qsCRq3kIqUZY=
