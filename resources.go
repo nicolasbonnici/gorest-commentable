@@ -2,10 +2,10 @@ package commentable
 
 import (
 	"github.com/gofiber/fiber/v2"
-	rbac "github.com/nicolasbonnici/gorest/rbac"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/processor"
+	rbac "github.com/nicolasbonnici/gorest/rbac"
 )
 
 const MaxFilterValuesPerField = 50

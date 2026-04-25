@@ -9,10 +9,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	auth "github.com/nicolasbonnici/gorest/auth"
-	rbac "github.com/nicolasbonnici/gorest/rbac"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/query"
+	rbac "github.com/nicolasbonnici/gorest/rbac"
 )
 
 type CommentHooks struct {

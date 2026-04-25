@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	rbac "github.com/nicolasbonnici/gorest/rbac"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/query"
+	rbac "github.com/nicolasbonnici/gorest/rbac"
 )
 
 func newTestVoter(t *testing.T) rbac.Voter {
