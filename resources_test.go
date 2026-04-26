@@ -478,9 +478,9 @@ func TestCommentHooks_GetAll_ModeratorSeesAwaitingAndPublished(t *testing.T) {
 			expectedCondCount: 1,
 		},
 		{
-			name:              "admin gets status filter",
+			name:              "admin sees all (no filter)",
 			roles:             []string{"admin"},
-			expectedCondCount: 1,
+			expectedCondCount: 0,
 		},
 		{
 			name:              "unauthenticated gets status filter",
