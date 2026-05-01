@@ -1,19 +1,13 @@
 package commentable
 
-import (
-	"github.com/google/uuid"
-)
-
 type CommentConverter struct{}
 
 func (c *CommentConverter) CreateDTOToModel(dto CommentCreateDTO) Comment {
 	return Comment{
-		Id:            uuid.New().String(),
 		CommentableId: dto.CommentableId,
 		Commentable:   dto.Commentable,
 		ParentId:      dto.ParentId,
 		Content:       dto.Content,
-		Status:        StatusAwaiting,
 	}
 }
 

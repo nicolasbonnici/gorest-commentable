@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	auth "github.com/nicolasbonnici/gorest/auth"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
@@ -53,42 +54,56 @@ func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment
 
 	model.Content = html.EscapeString(content)
 
+	// Set system fields
+	if model.Id == "" {
+		model.Id = uuid.New().String()
+	}
+	if model.Status == "" {
+		model.Status = h.config.DefaultStatus
+	}
+
 	if user != nil {
 		model.UserId = &user.UserID
 	}
 
 	ipAddress := c.IP()
-	userAgent := c.Get("User-Agent")
 	if ipAddress != "" {
 		model.IpAddress = &ipAddress
 	}
+
+	userAgent := c.Get("User-Agent")
 	if userAgent != "" {
 		model.UserAgent = &userAgent
 	}
 
-	ctx := auth.Context(c)
-	tempId := model.Id
-	tempUserId := model.UserId
-	tempIpAddress := model.IpAddress
-	tempUserAgent := model.UserAgent
-
-	// Clear system fields before RBAC validation to prevent tampering
-	model.Id = ""
-	model.UserId = nil
-	model.IpAddress = nil
-	model.UserAgent = nil
-
+	// Validate RBAC for authenticated users
+	// For anonymous users, the CRUD layer's NoOpHooks will allow all fields
 	if user != nil {
+		// Temporarily clear system fields before custom RBAC validation
+		tempId := model.Id
+		tempUserId := model.UserId
+		tempIpAddress := model.IpAddress
+		tempUserAgent := model.UserAgent
+		tempStatus := model.Status
+
+		model.Id = ""
+		model.UserId = nil
+		model.IpAddress = nil
+		model.UserAgent = nil
+		model.Status = ""
+
+		ctx := auth.Context(c)
 		if err := h.voter.ValidateWrite(ctx, model); err != nil {
 			return fiber.NewError(403, fmt.Sprintf("insufficient permissions: %v", err))
 		}
-	}
 
-	// Restore system fields with trusted values
-	model.Id = tempId
-	model.UserId = tempUserId
-	model.IpAddress = tempIpAddress
-	model.UserAgent = tempUserAgent
+		// Restore system fields
+		model.Id = tempId
+		model.UserId = tempUserId
+		model.IpAddress = tempIpAddress
+		model.UserAgent = tempUserAgent
+		model.Status = tempStatus
+	}
 
 	return nil
 }
@@ -223,12 +238,27 @@ func (h *CommentHooks) GetByID(c *fiber.Ctx, id any) error {
 }
 
 func (h *CommentHooks) GetAll(c *fiber.Ctx, conditions *[]query.Condition, orderBy *[]crud.OrderByClause) error {
+	// Admins see all comments regardless of status
+	if h.isAdmin(c) {
+		return nil
+	}
+
+	// Moderators see Published, Awaiting, and Moderated comments
 	if h.isModerator(c) {
-		*conditions = append(*conditions, query.In("status", StatusPublished, StatusAwaiting))
+		*conditions = append(*conditions, query.In("status", StatusPublished, StatusAwaiting, StatusModerated))
 	} else {
+		// Anonymous/regular users only see Published comments
 		*conditions = append(*conditions, query.Eq("status", StatusPublished))
 	}
 	return nil
+}
+
+func (h *CommentHooks) isAdmin(c *fiber.Ctx) bool {
+	roles, ok := rbac.GetRoles(auth.Context(c))
+	if !ok || len(roles) == 0 {
+		return false
+	}
+	return h.voter.IsSuperuser(roles)
 }
 
 func (h *CommentHooks) isModerator(c *fiber.Ctx) bool {
@@ -236,7 +266,11 @@ func (h *CommentHooks) isModerator(c *fiber.Ctx) bool {
 	if !ok || len(roles) == 0 {
 		return false
 	}
-	return h.voter.IsSuperuser(roles) || rbac.HasRole(roles, "moderator", h.voter.GetConfig().RoleHierarchy)
+	// Superusers (admin) have all privileges including moderator
+	if h.voter.IsSuperuser(roles) {
+		return true
+	}
+	return rbac.HasRole(roles, "moderator", h.voter.GetConfig().RoleHierarchy)
 }
 
 func (h *CommentHooks) defaultGetComment(ctx context.Context, id any) (*Comment, error) {
