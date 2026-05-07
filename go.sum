@@ -46,8 +46,8 @@ github.com/mattn/go-runewidth v0.0.23 h1:7ykA0T0jkPpzSvMS5i9uoNn2Xy3R383f9HDx3Ry
 github.com/mattn/go-runewidth v0.0.23/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=
 github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/nicolasbonnici/gorest v0.5.6 h1:5tpBhTn98AVOBMTGZh2P70wZ2eTrvDzMMrs4gkgP+Eg=
-github.com/nicolasbonnici/gorest v0.5.6/go.mod h1:RyxdFioBXcknuMULdz1QDsCYxNOy6cz6ha84AvLKY2c=
+github.com/nicolasbonnici/gorest v0.5.7 h1:tP/4/uLYKohBzcytwH3B8f/55tCp+ny2kCKT6gX5Wf8=
+github.com/nicolasbonnici/gorest v0.5.7/go.mod h1:QPWfZ5le/17+eXMHRuaIhTFoYKuM8u2gYfiAVXRmceM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
@@ -72,8 +72,8 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
-modernc.org/libc v1.72.1 h1:db1xwJ6u1kE3KHTFTTbe2GCrczHPKzlURP0aDC4NGD0=
-modernc.org/libc v1.72.1/go.mod h1:HRMiC/PhPGLIPM7GzAFCbI+oSgE3dhZ8FWftmRrHVlY=
+modernc.org/libc v1.72.2 h1:HwRjrHwX7hZIFCfRyw6otVlY+BoZEHFQmHQa5B0BzDE=
+modernc.org/libc v1.72.2/go.mod h1:43RZAMuEX483KwP1bW+3lTFm3dzwFpl6R8HMEutqy/w=
 modernc.org/mathutil v1.7.1 h1:GCZVGXdaN8gTqB1Mf/usp1Y/hSqgI2vAGGP4jZMCxOU=
 modernc.org/mathutil v1.7.1/go.mod h1:4p5IwJITfppl0G4sUEDtCr4DthTaT47/N3aT6MhfgJg=
 modernc.org/memory v1.11.0 h1:o4QC8aMQzmcwCK3t3Ux/ZHmwFPzE6hf2Y5LbkRs+hbI=
