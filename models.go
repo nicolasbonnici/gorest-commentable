@@ -19,17 +19,19 @@ var ValidStatuses = []string{
 }
 
 type Comment struct {
-	Id            string     `json:"id,omitempty" db:"id" rbac:"read:*;write:none"`
-	UserId        *string    `json:"userId,omitempty" db:"user_id" rbac:"read:*;write:none"`
-	CommentableId string     `json:"commentableId" db:"commentable_id" rbac:"read:*;write:*"`
-	Commentable   string     `json:"commentable" db:"commentable" rbac:"read:*;write:*"`
-	ParentId      *string    `json:"parentId,omitempty" db:"parent_id" rbac:"read:*;write:*"`
-	Content       string     `json:"content" db:"content" rbac:"read:*;write:*"`
-	Status        string     `json:"status" db:"status" rbac:"read:*;write:moderator"`
-	IpAddress     *string    `json:"ipAddress,omitempty" db:"ip_address" rbac:"read:moderator;write:none"`
-	UserAgent     *string    `json:"userAgent,omitempty" db:"user_agent" rbac:"read:moderator;write:none"`
-	UpdatedAt     *time.Time `json:"updatedAt,omitempty" db:"updated_at" rbac:"read:*;write:none"`
-	CreatedAt     *time.Time `json:"createdAt,omitempty" db:"created_at" rbac:"read:*;write:none"`
+	Id             string     `json:"id,omitempty" db:"id" rbac:"read:*;write:none"`
+	UserId         *string    `json:"userId,omitempty" db:"user_id" rbac:"read:*;write:none"`
+	CommentableId  string     `json:"commentableId" db:"commentable_id" rbac:"read:*;write:*"`
+	Commentable    string     `json:"commentable" db:"commentable" rbac:"read:*;write:*"`
+	ParentId       *string    `json:"parentId,omitempty" db:"parent_id" rbac:"read:*;write:*"`
+	Content        string     `json:"content" db:"content" rbac:"read:*;write:*"`
+	Status         string     `json:"status" db:"status" rbac:"read:*;write:moderator"`
+	IpAddress      *string    `json:"ipAddress,omitempty" db:"ip_address" rbac:"read:moderator;write:none"`
+	UserAgent      *string    `json:"userAgent,omitempty" db:"user_agent" rbac:"read:moderator;write:none"`
+	RemoteSourceId *string    `json:"remoteSourceId,omitempty" db:"remote_source_id" rbac:"read:*;write:none"`
+	RemoteSource   *string    `json:"remoteSource,omitempty" db:"remote_source" rbac:"read:*;write:none"`
+	UpdatedAt      *time.Time `json:"updatedAt,omitempty" db:"updated_at" rbac:"read:*;write:none"`
+	CreatedAt      *time.Time `json:"createdAt,omitempty" db:"created_at" rbac:"read:*;write:none"`
 }
 
 func (Comment) TableName() string {

@@ -137,5 +137,38 @@ func GetMigrations() migrations.MigrationSource {
 		},
 	)
 
+	builder.Add(
+		"20260508000001000",
+		"add_remote_source_tracking_to_comments",
+		func(ctx context.Context, db database.Database) error {
+			// Add columns
+			if err := migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment ADD COLUMN remote_source_id TEXT, ADD COLUMN remote_source TEXT`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN remote_source_id TEXT, ADD COLUMN remote_source VARCHAR(255)`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN remote_source_id TEXT, ADD COLUMN remote_source TEXT`,
+			}); err != nil {
+				return err
+			}
+
+			// Create unique index to prevent duplicate imports
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `CREATE UNIQUE INDEX idx_comment_remote_source ON comment(remote_source_id, remote_source) WHERE remote_source_id IS NOT NULL AND remote_source IS NOT NULL`,
+				MySQL:    `CREATE UNIQUE INDEX idx_comment_remote_source ON comment(remote_source_id, remote_source)`,
+				SQLite:   `CREATE UNIQUE INDEX idx_comment_remote_source ON comment(remote_source_id, remote_source) WHERE remote_source_id IS NOT NULL AND remote_source IS NOT NULL`,
+			})
+		},
+		func(ctx context.Context, db database.Database) error {
+			// Drop index first
+			_ = migrations.DropIndex(ctx, db, "idx_comment_remote_source", "comment")
+
+			// Drop columns
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment DROP COLUMN remote_source_id, DROP COLUMN remote_source`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN remote_source_id, DROP COLUMN remote_source`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN remote_source_id, DROP COLUMN remote_source`,
+			})
+		},
+	)
+
 	return builder.Build()
 }
