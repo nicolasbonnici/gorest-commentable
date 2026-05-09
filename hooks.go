@@ -293,6 +293,8 @@ func (h *CommentHooks) defaultGetComment(ctx context.Context, id any) (*Comment,
 		&comment.Status,
 		&comment.IpAddress,
 		&comment.UserAgent,
+		&comment.RemoteSourceId,
+		&comment.RemoteSource,
 	)
 	if err != nil {
 		return nil, err
