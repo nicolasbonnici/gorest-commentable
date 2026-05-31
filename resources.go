@@ -1,7 +1,7 @@
 package commentable
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/processor"
@@ -77,22 +77,22 @@ func RegisterCommentRoutes(router fiber.Router, db database.Database, config *Co
 	router.Delete("/comments/:id", res.Delete)
 }
 
-func (r *CommentResource) Create(c *fiber.Ctx) error {
+func (r *CommentResource) Create(c fiber.Ctx) error {
 	return r.processor.Create(c)
 }
 
-func (r *CommentResource) GetByID(c *fiber.Ctx) error {
+func (r *CommentResource) GetByID(c fiber.Ctx) error {
 	return r.processor.GetByID(c)
 }
 
-func (r *CommentResource) GetAll(c *fiber.Ctx) error {
+func (r *CommentResource) GetAll(c fiber.Ctx) error {
 	return r.processor.GetAll(c)
 }
 
-func (r *CommentResource) Update(c *fiber.Ctx) error {
+func (r *CommentResource) Update(c fiber.Ctx) error {
 	return r.processor.Update(c)
 }
 
-func (r *CommentResource) Delete(c *fiber.Ctx) error {
+func (r *CommentResource) Delete(c fiber.Ctx) error {
 	return r.processor.Delete(c)
 }

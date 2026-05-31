@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/query"
 	rbac "github.com/nicolasbonnici/gorest/rbac"
@@ -51,8 +51,8 @@ func TestCommentHooks_isModerator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := fiber.New()
 			var got bool
-			app.Get("/", func(c *fiber.Ctx) error {
-				c.SetUserContext(rbac.WithRoles(context.Background(), tt.roles))
+			app.Get("/", func(c fiber.Ctx) error {
+				c.SetContext(rbac.WithRoles(context.Background(), tt.roles))
 				got = hooks.isModerator(c)
 				return c.SendStatus(200)
 			})
@@ -77,9 +77,9 @@ func TestCommentHooks_CreateAnonymous(t *testing.T) {
 
 	app := fiber.New()
 	var createdComment *Comment
-	app.Post("/", func(c *fiber.Ctx) error {
+	app.Post("/", func(c fiber.Ctx) error {
 		// No authentication context (anonymous user)
-		c.SetUserContext(context.Background())
+		c.SetContext(context.Background())
 
 		dto := CommentCreateDTO{
 			Commentable:   "post",
@@ -136,9 +136,9 @@ func TestCommentHooks_CreateAnonymousDisallowed(t *testing.T) {
 	hooks := NewCommentHooks(nil, config, newTestVoter(t))
 
 	app := fiber.New()
-	app.Post("/", func(c *fiber.Ctx) error {
+	app.Post("/", func(c fiber.Ctx) error {
 		// No authentication context (anonymous user)
-		c.SetUserContext(context.Background())
+		c.SetContext(context.Background())
 
 		dto := CommentCreateDTO{
 			Commentable:   "post",
@@ -176,12 +176,12 @@ func TestCommentHooks_CreateAuthenticated(t *testing.T) {
 
 	app := fiber.New()
 	var createdComment *Comment
-	app.Post("/", func(c *fiber.Ctx) error {
+	app.Post("/", func(c fiber.Ctx) error {
 		// Set authenticated user with reader role
 		userId := "user-123"
 		c.Locals("user_id", userId)
 		ctx := rbac.WithRoles(context.Background(), []string{"reader"})
-		c.SetUserContext(ctx)
+		c.SetContext(ctx)
 
 		dto := CommentCreateDTO{
 			Commentable:   "post",
@@ -241,12 +241,12 @@ func TestCommentHooks_CannotEditAnonymousComment(t *testing.T) {
 	}
 
 	app := fiber.New()
-	app.Put("/", func(c *fiber.Ctx) error {
+	app.Put("/", func(c fiber.Ctx) error {
 		// Regular authenticated user (not moderator)
 		userId := "user-456"
 		c.Locals("user_id", userId)
 		ctx := rbac.WithRoles(context.Background(), []string{"reader"})
-		c.SetUserContext(ctx)
+		c.SetContext(ctx)
 
 		err := hooks.checkOwnership(c, existingComment)
 		if err != nil {
@@ -284,12 +284,12 @@ func TestCommentHooks_ModeratorCanEditAnonymousComment(t *testing.T) {
 	}
 
 	app := fiber.New()
-	app.Put("/", func(c *fiber.Ctx) error {
+	app.Put("/", func(c fiber.Ctx) error {
 		// Moderator user
 		userId := "moderator-user"
 		c.Locals("user_id", userId)
 		ctx := rbac.WithRoles(context.Background(), []string{"moderator"})
-		c.SetUserContext(ctx)
+		c.SetContext(ctx)
 
 		err := hooks.checkOwnership(c, existingComment)
 		if err != nil {
@@ -328,9 +328,9 @@ func TestCommentHooks_UnauthenticatedCannotEditAuthenticatedComment(t *testing.T
 	}
 
 	app := fiber.New()
-	app.Put("/", func(c *fiber.Ctx) error {
+	app.Put("/", func(c fiber.Ctx) error {
 		// No authentication context
-		c.SetUserContext(context.Background())
+		c.SetContext(context.Background())
 
 		err := hooks.checkOwnership(c, existingComment)
 		if err != nil {
@@ -364,12 +364,12 @@ func TestCommentHooks_CannotDeleteAnonymousComment(t *testing.T) {
 	}
 
 	app := fiber.New()
-	app.Delete("/", func(c *fiber.Ctx) error {
+	app.Delete("/", func(c fiber.Ctx) error {
 		// Regular authenticated user (not moderator)
 		userId := "user-456"
 		c.Locals("user_id", userId)
 		ctx := rbac.WithRoles(context.Background(), []string{"reader"})
-		c.SetUserContext(ctx)
+		c.SetContext(ctx)
 
 		// Simulate anonymous comment
 		existingComment := &Comment{
@@ -413,12 +413,12 @@ func TestCommentHooks_ModeratorCanDeleteAnonymousComment(t *testing.T) {
 	}
 
 	app := fiber.New()
-	app.Delete("/", func(c *fiber.Ctx) error {
+	app.Delete("/", func(c fiber.Ctx) error {
 		// Moderator user
 		userId := "moderator-user"
 		c.Locals("user_id", userId)
 		ctx := rbac.WithRoles(context.Background(), []string{"moderator"})
-		c.SetUserContext(ctx)
+		c.SetContext(ctx)
 
 		// Simulate anonymous comment
 		existingComment := &Comment{
@@ -494,9 +494,9 @@ func TestCommentHooks_GetAll_ModeratorSeesAwaitingAndPublished(t *testing.T) {
 			app := fiber.New()
 			var capturedConditions *[]query.Condition
 
-			app.Get("/", func(c *fiber.Ctx) error {
+			app.Get("/", func(c fiber.Ctx) error {
 				ctx := rbac.WithRoles(context.Background(), tt.roles)
-				c.SetUserContext(ctx)
+				c.SetContext(ctx)
 
 				conditions := []query.Condition{}
 				orderBy := []crud.OrderByClause{}

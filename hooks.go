@@ -7,7 +7,7 @@ import (
 	"html"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	auth "github.com/nicolasbonnici/gorest/auth"
 	"github.com/nicolasbonnici/gorest/crud"
@@ -33,7 +33,7 @@ func NewCommentHooks(db database.Database, config *Config, voter rbac.Voter) *Co
 	return h
 }
 
-func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment) error {
+func (h *CommentHooks) Create(c fiber.Ctx, dto CommentCreateDTO, model *Comment) error {
 	if !h.config.IsAllowedType(dto.Commentable) {
 		return fiber.NewError(400, "commentable type is not allowed")
 	}
@@ -108,7 +108,7 @@ func (h *CommentHooks) Create(c *fiber.Ctx, dto CommentCreateDTO, model *Comment
 	return nil
 }
 
-func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment) error {
+func (h *CommentHooks) Update(c fiber.Ctx, dto CommentUpdateDTO, model *Comment) error {
 	if dto.Content == nil && dto.Status == nil {
 		return fiber.NewError(400, "at least one field must be provided")
 	}
@@ -160,7 +160,7 @@ func (h *CommentHooks) Update(c *fiber.Ctx, dto CommentUpdateDTO, model *Comment
 	return nil
 }
 
-func (h *CommentHooks) checkOwnership(c *fiber.Ctx, existing *Comment) error {
+func (h *CommentHooks) checkOwnership(c fiber.Ctx, existing *Comment) error {
 	// Anonymous comment - only moderators can edit
 	if existing.UserId == nil {
 		if h.isModerator(c) {
@@ -204,7 +204,7 @@ func (h *CommentHooks) validateStatus(status string) error {
 	return fiber.NewError(400, fmt.Sprintf("invalid status value (allowed: %v)", ValidStatuses))
 }
 
-func (h *CommentHooks) Delete(c *fiber.Ctx, id any) error {
+func (h *CommentHooks) Delete(c fiber.Ctx, id any) error {
 	ctx := auth.Context(c)
 
 	existing, err := h.getComment(ctx, id)
@@ -233,11 +233,11 @@ func (h *CommentHooks) Delete(c *fiber.Ctx, id any) error {
 	return fiber.NewError(403, "You can only delete your own comments")
 }
 
-func (h *CommentHooks) GetByID(c *fiber.Ctx, id any) error {
+func (h *CommentHooks) GetByID(c fiber.Ctx, id any) error {
 	return nil
 }
 
-func (h *CommentHooks) GetAll(c *fiber.Ctx, conditions *[]query.Condition, orderBy *[]crud.OrderByClause) error {
+func (h *CommentHooks) GetAll(c fiber.Ctx, conditions *[]query.Condition, orderBy *[]crud.OrderByClause) error {
 	// Admins see all comments regardless of status
 	if h.isAdmin(c) {
 		return nil
@@ -253,7 +253,7 @@ func (h *CommentHooks) GetAll(c *fiber.Ctx, conditions *[]query.Condition, order
 	return nil
 }
 
-func (h *CommentHooks) isAdmin(c *fiber.Ctx) bool {
+func (h *CommentHooks) isAdmin(c fiber.Ctx) bool {
 	roles, ok := rbac.GetRoles(auth.Context(c))
 	if !ok || len(roles) == 0 {
 		return false
@@ -261,7 +261,7 @@ func (h *CommentHooks) isAdmin(c *fiber.Ctx) bool {
 	return h.voter.IsSuperuser(roles)
 }
 
-func (h *CommentHooks) isModerator(c *fiber.Ctx) bool {
+func (h *CommentHooks) isModerator(c fiber.Ctx) bool {
 	roles, ok := rbac.GetRoles(auth.Context(c))
 	if !ok || len(roles) == 0 {
 		return false
