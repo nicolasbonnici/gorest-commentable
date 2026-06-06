@@ -7,7 +7,7 @@ toolchain go1.26.4
 require (
 	github.com/gofiber/fiber/v3 v3.3.0
 	github.com/google/uuid v1.6.0
-	github.com/nicolasbonnici/gorest v0.5.16
+	github.com/nicolasbonnici/gorest v0.5.17
 )
 
 require (
