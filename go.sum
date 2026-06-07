@@ -57,8 +57,8 @@ github.com/mattn/go-isatty v0.0.22 h1:j8l17JJ9i6VGPUFUYoTUKPSgKe/83EYU2zBC7YNKMw
 github.com/mattn/go-isatty v0.0.22/go.mod h1:ZXfXG4SQHsB/w3ZeOYbR0PrPwLy+n6xiMrJlRFqopa4=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=
 github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/nicolasbonnici/gorest v0.5.17 h1:Q2CXnBqvHrBq4i8kz5C/m6X+8PHwPVHt+pppqXyXLTc=
-github.com/nicolasbonnici/gorest v0.5.17/go.mod h1:lqrLUUOZYYZ44pfjx6zycR/YMDk976CtlHpW8x/JCbA=
+github.com/nicolasbonnici/gorest v0.5.18 h1:KXDLlJetuZI+bBh3Xx1xI49ozyXr7SzY0uLRfMD51Io=
+github.com/nicolasbonnici/gorest v0.5.18/go.mod h1:lqrLUUOZYYZ44pfjx6zycR/YMDk976CtlHpW8x/JCbA=
 github.com/philhofer/fwd v1.2.0 h1:e6DnBTl7vGY+Gz322/ASL4Gyp1FspeMvx1RNDoToZuM=
 github.com/philhofer/fwd v1.2.0/go.mod h1:RqIHx9QI14HlwKwm98g9Re5prTQ6LdeRQn+gXJFxsJM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
