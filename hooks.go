@@ -234,6 +234,17 @@ func (h *CommentHooks) Delete(c fiber.Ctx, id any) error {
 }
 
 func (h *CommentHooks) GetByID(c fiber.Ctx, id any) error {
+	ctx := auth.Context(c)
+
+	comment, err := h.getComment(ctx, id)
+	if err != nil {
+		return fiber.NewError(404, "Comment not found")
+	}
+
+	if comment.Status == StatusAwaiting && !h.isModerator(c) {
+		return fiber.NewError(404, "Comment not found")
+	}
+
 	return nil
 }
 
