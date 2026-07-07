@@ -249,19 +249,21 @@ func (h *CommentHooks) GetByID(c fiber.Ctx, id any) error {
 }
 
 func (h *CommentHooks) GetAll(c fiber.Ctx, conditions *[]query.Condition, orderBy *[]crud.OrderByClause) error {
-	// Admins see all comments regardless of status
+	*conditions = append(*conditions, h.statusConditions(c)...)
+	return nil
+}
+
+// statusConditions returns the status visibility filter for the caller: admins
+// see everything (no filter), moderators additionally see awaiting/moderated
+// comments, everyone else only published ones.
+func (h *CommentHooks) statusConditions(c fiber.Ctx) []query.Condition {
 	if h.isAdmin(c) {
 		return nil
 	}
-
-	// Moderators see Published, Awaiting, and Moderated comments
 	if h.isModerator(c) {
-		*conditions = append(*conditions, query.In("status", StatusPublished, StatusAwaiting, StatusModerated))
-	} else {
-		// Anonymous/regular users only see Published comments
-		*conditions = append(*conditions, query.Eq("status", StatusPublished))
+		return []query.Condition{query.In("status", StatusPublished, StatusAwaiting, StatusModerated)}
 	}
-	return nil
+	return []query.Condition{query.Eq("status", StatusPublished)}
 }
 
 func (h *CommentHooks) isAdmin(c fiber.Ctx) bool {
@@ -285,30 +287,9 @@ func (h *CommentHooks) isModerator(c fiber.Ctx) bool {
 }
 
 func (h *CommentHooks) defaultGetComment(ctx context.Context, id any) (*Comment, error) {
-	var comment Comment
 	idStr, ok := id.(string)
 	if !ok {
 		return nil, errors.New("invalid ID type")
 	}
-
-	sql := "SELECT * FROM comment WHERE id = " + h.db.Dialect().Placeholder(1)
-	err := h.db.QueryRow(ctx, sql, idStr).Scan(
-		&comment.Id,
-		&comment.UserId,
-		&comment.CommentableId,
-		&comment.Commentable,
-		&comment.ParentId,
-		&comment.Content,
-		&comment.UpdatedAt,
-		&comment.CreatedAt,
-		&comment.Status,
-		&comment.IpAddress,
-		&comment.UserAgent,
-		&comment.RemoteSourceId,
-		&comment.RemoteSource,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &comment, nil
+	return crud.New[Comment](h.db).GetByID(ctx, idStr)
 }

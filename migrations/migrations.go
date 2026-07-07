@@ -47,8 +47,8 @@ func GetMigrations() migrations.MigrationSource {
 					commentable TEXT NOT NULL,
 					parent_id TEXT REFERENCES comment(id) ON DELETE CASCADE,
 					content TEXT NOT NULL,
-					updated_at TEXT,
-					created_at TEXT NOT NULL DEFAULT (datetime('now'))
+					updated_at DATETIME,
+					created_at DATETIME NOT NULL DEFAULT (datetime('now'))
 				)`,
 			}); err != nil {
 				return err
@@ -122,17 +122,33 @@ func GetMigrations() migrations.MigrationSource {
 		"20260211000001000",
 		"add_ip_and_ua_to_comments",
 		func(ctx context.Context, db database.Database) error {
+			// SQLite only permits a single column per ALTER TABLE, so each
+			// column is added with its own statement to stay portable.
+			if err := migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment ADD COLUMN ip_address VARCHAR(45)`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN ip_address VARCHAR(45)`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN ip_address TEXT`,
+			}); err != nil {
+				return err
+			}
 			return migrations.SQL(ctx, db, migrations.DialectSQL{
-				Postgres: `ALTER TABLE comment ADD COLUMN ip_address VARCHAR(45), ADD COLUMN user_agent TEXT`,
-				MySQL:    `ALTER TABLE comment ADD COLUMN ip_address VARCHAR(45), ADD COLUMN user_agent TEXT`,
-				SQLite:   `ALTER TABLE comment ADD COLUMN ip_address TEXT, ADD COLUMN user_agent TEXT`,
+				Postgres: `ALTER TABLE comment ADD COLUMN user_agent TEXT`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN user_agent TEXT`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN user_agent TEXT`,
 			})
 		},
 		func(ctx context.Context, db database.Database) error {
+			if err := migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment DROP COLUMN ip_address`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN ip_address`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN ip_address`,
+			}); err != nil {
+				return err
+			}
 			return migrations.SQL(ctx, db, migrations.DialectSQL{
-				Postgres: `ALTER TABLE comment DROP COLUMN ip_address, DROP COLUMN user_agent`,
-				MySQL:    `ALTER TABLE comment DROP COLUMN ip_address, DROP COLUMN user_agent`,
-				SQLite:   `ALTER TABLE comment DROP COLUMN ip_address, DROP COLUMN user_agent`,
+				Postgres: `ALTER TABLE comment DROP COLUMN user_agent`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN user_agent`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN user_agent`,
 			})
 		},
 	)
@@ -141,11 +157,18 @@ func GetMigrations() migrations.MigrationSource {
 		"20260508000001000",
 		"add_remote_source_tracking_to_comments",
 		func(ctx context.Context, db database.Database) error {
-			// Add columns
+			// SQLite only permits a single column per ALTER TABLE.
 			if err := migrations.SQL(ctx, db, migrations.DialectSQL{
-				Postgres: `ALTER TABLE comment ADD COLUMN remote_source_id TEXT, ADD COLUMN remote_source TEXT`,
-				MySQL:    `ALTER TABLE comment ADD COLUMN remote_source_id TEXT, ADD COLUMN remote_source VARCHAR(255)`,
-				SQLite:   `ALTER TABLE comment ADD COLUMN remote_source_id TEXT, ADD COLUMN remote_source TEXT`,
+				Postgres: `ALTER TABLE comment ADD COLUMN remote_source_id TEXT`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN remote_source_id TEXT`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN remote_source_id TEXT`,
+			}); err != nil {
+				return err
+			}
+			if err := migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment ADD COLUMN remote_source TEXT`,
+				MySQL:    `ALTER TABLE comment ADD COLUMN remote_source VARCHAR(255)`,
+				SQLite:   `ALTER TABLE comment ADD COLUMN remote_source TEXT`,
 			}); err != nil {
 				return err
 			}
@@ -161,12 +184,48 @@ func GetMigrations() migrations.MigrationSource {
 			// Drop index first
 			_ = migrations.DropIndex(ctx, db, "idx_comment_remote_source", "comment")
 
-			// Drop columns
+			if err := migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `ALTER TABLE comment DROP COLUMN remote_source_id`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN remote_source_id`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN remote_source_id`,
+			}); err != nil {
+				return err
+			}
 			return migrations.SQL(ctx, db, migrations.DialectSQL{
-				Postgres: `ALTER TABLE comment DROP COLUMN remote_source_id, DROP COLUMN remote_source`,
-				MySQL:    `ALTER TABLE comment DROP COLUMN remote_source_id, DROP COLUMN remote_source`,
-				SQLite:   `ALTER TABLE comment DROP COLUMN remote_source_id, DROP COLUMN remote_source`,
+				Postgres: `ALTER TABLE comment DROP COLUMN remote_source`,
+				MySQL:    `ALTER TABLE comment DROP COLUMN remote_source`,
+				SQLite:   `ALTER TABLE comment DROP COLUMN remote_source`,
 			})
+		},
+	)
+
+	builder.Add(
+		"20260706000001000",
+		"add_thread_traversal_indexes",
+		func(ctx context.Context, db database.Database) error {
+			// The batch-by-depth thread fetch loads each nesting level with a
+			// single "parent_id IN (...) AND status = ..." query; a composite
+			// index on that exact pair keeps every level lookup index-only.
+			// idx_commentable already leads with (commentable, commentable_id),
+			// so the polymorphic pair lookup for root comments is covered.
+			if err := migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `CREATE INDEX IF NOT EXISTS idx_comment_parent_status ON comment(parent_id, status)`,
+				MySQL:    `CREATE INDEX idx_comment_parent_status ON comment(parent_id, status)`,
+				SQLite:   `CREATE INDEX IF NOT EXISTS idx_comment_parent_status ON comment(parent_id, status)`,
+			}); err != nil {
+				return err
+			}
+
+			return migrations.SQL(ctx, db, migrations.DialectSQL{
+				Postgres: `CREATE INDEX IF NOT EXISTS idx_comment_commentable_pair ON comment(commentable, commentable_id)`,
+				MySQL:    `CREATE INDEX idx_comment_commentable_pair ON comment(commentable, commentable_id)`,
+				SQLite:   `CREATE INDEX IF NOT EXISTS idx_comment_commentable_pair ON comment(commentable, commentable_id)`,
+			})
+		},
+		func(ctx context.Context, db database.Database) error {
+			_ = migrations.DropIndex(ctx, db, "idx_comment_parent_status", "comment")
+			_ = migrations.DropIndex(ctx, db, "idx_comment_commentable_pair", "comment")
+			return nil
 		},
 	)
 

@@ -2,6 +2,7 @@ package commentable
 
 import (
 	"github.com/gofiber/fiber/v3"
+	auth "github.com/nicolasbonnici/gorest/auth"
 	"github.com/nicolasbonnici/gorest/crud"
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/processor"
@@ -12,6 +13,9 @@ const MaxFilterValuesPerField = 50
 
 type CommentResource struct {
 	processor processor.Processor[Comment, CommentCreateDTO, CommentUpdateDTO, CommentResponseDTO]
+	crud      *crud.CRUD[Comment]
+	hooks     *CommentHooks
+	config    *Config
 }
 
 func RegisterCommentRoutes(router fiber.Router, db database.Database, config *Config) {
@@ -68,9 +72,13 @@ func RegisterCommentRoutes(router fiber.Router, db database.Database, config *Co
 
 	res := &CommentResource{
 		processor: proc,
+		crud:      commentCRUD,
+		hooks:     hooks,
+		config:    config,
 	}
 
 	router.Get("/comments", res.GetAll)
+	router.Get("/comments/thread", res.GetThread)
 	router.Get("/comments/:id", res.GetByID)
 	router.Post("/comments", res.Create)
 	router.Put("/comments/:id", res.Update)
@@ -87,6 +95,31 @@ func (r *CommentResource) GetByID(c fiber.Ctx) error {
 
 func (r *CommentResource) GetAll(c fiber.Ctx) error {
 	return r.processor.GetAll(c)
+}
+
+func (r *CommentResource) GetThread(c fiber.Ctx) error {
+	commentableType := c.Query("commentable")
+	commentableID := c.Query("commentableId")
+	if commentableType == "" || commentableID == "" {
+		return fiber.NewError(400, "commentable and commentableId are required")
+	}
+	if !r.config.IsAllowedType(commentableType) {
+		return fiber.NewError(400, "commentable type is not allowed")
+	}
+
+	roots, err := fetchThread(
+		auth.Context(c),
+		r.crud,
+		r.config,
+		commentableType,
+		commentableID,
+		r.hooks.statusConditions(c),
+	)
+	if err != nil {
+		return fiber.NewError(500, "failed to fetch comment thread")
+	}
+
+	return c.JSON(fiber.Map{"data": roots})
 }
 
 func (r *CommentResource) Update(c fiber.Ctx) error {
