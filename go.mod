@@ -2,7 +2,7 @@ module github.com/nicolasbonnici/gorest-commentable
 
 go 1.26
 
-toolchain go1.26.4
+toolchain go1.26.5
 
 require (
 	github.com/gofiber/fiber/v3 v3.4.0
