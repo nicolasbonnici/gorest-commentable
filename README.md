@@ -1,7 +1,8 @@
 # GoREST Commentable Plugin
 
 [![Test](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nicolasbonnici/gorest-commentable/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/nicolasbonnici/gorest-commentable)](https://goreportcard.com/report/github.com/nicolasbonnici/gorest-commentable)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nicolasbonnici/gorest-commentable.svg)](https://pkg.go.dev/github.com/nicolasbonnici/gorest-commentable)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/nicolasbonnici/gorest-commentable)](https://github.com/nicolasbonnici/gorest-commentable/blob/HEAD/go.mod)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A polymorphic commenting plugin for GoREST that allows adding comments to any resource type.
