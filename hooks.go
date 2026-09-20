@@ -43,6 +43,34 @@ func (h *CommentHooks) Create(c fiber.Ctx, dto CommentCreateDTO, model *Comment)
 		return fiber.NewError(401, "authentication required to comment")
 	}
 
+	// The target is a required UUID column. Left unset, or set to anything the
+	// column cannot hold, it used to travel all the way to the driver, which
+	// answered with `invalid input syntax for type uuid: ""` and had that text
+	// repeated to the caller. A missing field is a request problem and is
+	// answered here, in the caller's vocabulary.
+	// Read from the DTO, like the checks above and below it: the converter has
+	// normally already copied it onto the model, but the hook's inputs are the
+	// caller's, and validating the copy would miss a caller that supplied one
+	// and not the other.
+	if strings.TrimSpace(dto.CommentableId) == "" {
+		return fiber.NewError(400, "commentableId is required")
+	}
+	if _, err := uuid.Parse(dto.CommentableId); err != nil {
+		return fiber.NewError(400, "commentableId must be a valid identifier")
+	}
+
+	// parent_id is nullable, so an empty string is not the same as absent: it
+	// is a value the column cannot hold. Treat it as absent rather than pass
+	// it down.
+	if model.ParentId != nil {
+		parent := strings.TrimSpace(*model.ParentId)
+		if parent == "" {
+			model.ParentId = nil
+		} else if _, err := uuid.Parse(parent); err != nil {
+			return fiber.NewError(400, "parentId must be a valid identifier")
+		}
+	}
+
 	content := strings.TrimSpace(dto.Content)
 	if content == "" {
 		return fiber.NewError(400, "content cannot be empty")

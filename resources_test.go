@@ -11,6 +11,11 @@ import (
 	rbac "github.com/nicolasbonnici/gorest/rbac"
 )
 
+// A real UUID: the comment table declares commentable_id as UUID on
+// PostgreSQL and CHAR(36) on MySQL, so a placeholder like "test-id" is a value
+// no supported engine would store.
+const testCommentableID = "3f1a7c22-5f6e-4a0b-9d3e-1c2b4a5d6e7f"
+
 func newTestVoter(t *testing.T) rbac.Voter {
 	t.Helper()
 	voter, err := rbac.NewVoter(rbac.Config{
@@ -83,7 +88,7 @@ func TestCommentHooks_CreateAnonymous(t *testing.T) {
 
 		dto := CommentCreateDTO{
 			Commentable:   "post",
-			CommentableId: "test-id",
+			CommentableId: testCommentableID,
 			Content:       "Anonymous comment",
 		}
 		model := &Comment{}
@@ -142,7 +147,7 @@ func TestCommentHooks_CreateAnonymousDisallowed(t *testing.T) {
 
 		dto := CommentCreateDTO{
 			Commentable:   "post",
-			CommentableId: "test-id",
+			CommentableId: testCommentableID,
 			Content:       "Anonymous comment",
 		}
 		model := &Comment{}
@@ -185,7 +190,7 @@ func TestCommentHooks_CreateAuthenticated(t *testing.T) {
 
 		dto := CommentCreateDTO{
 			Commentable:   "post",
-			CommentableId: "test-id",
+			CommentableId: testCommentableID,
 			Content:       "Authenticated comment",
 		}
 		model := &Comment{}
@@ -522,6 +527,48 @@ func TestCommentHooks_GetAll_ModeratorSeesAwaitingAndPublished(t *testing.T) {
 
 			if len(*capturedConditions) != tt.expectedCondCount {
 				t.Errorf("expected %d condition(s), got %d", tt.expectedCondCount, len(*capturedConditions))
+			}
+		})
+	}
+}
+
+// TestCommentHooks_CreateRejectsUnstorableTarget covers the defect the blog
+// audit's FuzzAnonymousComment found: a missing or malformed commentableId
+// travelled to the driver, which answered `invalid input syntax for type uuid:
+// ""` and had that text repeated to the caller.
+func TestCommentHooks_CreateRejectsUnstorableTarget(t *testing.T) {
+	hooks := NewCommentHooks(nil, &Config{
+		AllowedTypes:     []string{"post"},
+		MaxContentLength: 1000,
+		AllowAnonymous:   true,
+		DefaultStatus:    StatusAwaiting,
+	}, nil)
+
+	for name, id := range map[string]string{
+		"missing":    "",
+		"blank":      "   ",
+		"not a uuid": "test-id",
+		"numeric":    "0",
+		"traversal":  "../../etc/passwd",
+	} {
+		t.Run(name, func(t *testing.T) {
+			app := fiber.New()
+			app.Post("/", func(c fiber.Ctx) error {
+				c.SetContext(context.Background())
+				dto := CommentCreateDTO{
+					Commentable:   "post",
+					CommentableId: id,
+					Content:       "hello",
+				}
+				return hooks.Create(c, dto, &Comment{CommentableId: id})
+			})
+
+			resp, err := app.Test(httptest.NewRequest("POST", "/", nil))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.StatusCode != 400 {
+				t.Errorf("commentableId %q: got HTTP %d, want 400", id, resp.StatusCode)
 			}
 		})
 	}
