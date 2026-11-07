@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/nicolasbonnici/gorest/database"
+
+	"github.com/nicolasbonnici/gorest-commentable/antispam"
 )
 
 type Config struct {
@@ -17,6 +19,9 @@ type Config struct {
 	MaxNestingDepth    int      `json:"max_nesting_depth" yaml:"max_nesting_depth"`
 	DefaultStatus      string   `json:"default_status" yaml:"default_status"`
 	AllowAnonymous     bool     `json:"allow_anonymous" yaml:"allow_anonymous"`
+	// AntiSpam configures anti-automation defenses for anonymous comments. It is
+	// disabled by default, preserving existing behavior until opted in.
+	AntiSpam antispam.Config `json:"antispam" yaml:"antispam"`
 }
 
 func DefaultConfig() Config {

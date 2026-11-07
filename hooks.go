@@ -7,6 +7,8 @@ import (
 	"html"
 	"strings"
 
+	"time"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	auth "github.com/nicolasbonnici/gorest/auth"
@@ -14,20 +16,24 @@ import (
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/query"
 	rbac "github.com/nicolasbonnici/gorest/rbac"
+
+	"github.com/nicolasbonnici/gorest-commentable/antispam"
 )
 
 type CommentHooks struct {
 	db         database.Database
 	config     *Config
 	voter      rbac.Voter
+	antispam   *antispam.Service
 	getComment func(ctx context.Context, id any) (*Comment, error)
 }
 
 func NewCommentHooks(db database.Database, config *Config, voter rbac.Voter) *CommentHooks {
 	h := &CommentHooks{
-		db:     db,
-		config: config,
-		voter:  voter,
+		db:       db,
+		config:   config,
+		voter:    voter,
+		antispam: antispam.New(config.AntiSpam),
 	}
 	h.getComment = h.defaultGetComment
 	return h
@@ -41,6 +47,27 @@ func (h *CommentHooks) Create(c fiber.Ctx, dto CommentCreateDTO, model *Comment)
 	user := auth.GetAuthenticatedUser(c)
 	if !h.config.AllowAnonymous && user == nil {
 		return fiber.NewError(401, "authentication required to comment")
+	}
+
+	// Anti-spam enforcement applies only to anonymous submissions; authenticated
+	// users already carry accountability through their account. Every layer is a
+	// no-op unless explicitly enabled in config.
+	if user == nil && h.antispam.Enabled() {
+		sub := antispam.Submission{
+			IP:        c.IP(),
+			Target:    dto.Commentable + ":" + dto.CommentableId,
+			Challenge: dto.Challenge,
+			Solution:  dto.Solution,
+			Honeypot:  dto.Website,
+		}
+		if err := h.antispam.CheckSubmission(sub, time.Now()); err != nil {
+			if errors.Is(err, antispam.ErrRateLimited) {
+				return fiber.NewError(fiber.StatusTooManyRequests, "too many comments, please try again later")
+			}
+			// All other anti-spam failures collapse to one generic message so the
+			// specific layer that rejected the request is not disclosed.
+			return fiber.NewError(400, "anti-spam verification failed")
+		}
 	}
 
 	// The target is a required UUID column. Left unset, or set to anything the

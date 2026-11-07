@@ -51,6 +51,18 @@ plugins:
       enable_nesting: true
       max_nesting_depth: 10
       default_status: "awaiting"
+      # Anti-spam for anonymous comments (all layers disabled by default)
+      antispam:
+        enabled: false
+        secret: "${COMMENT_ANTISPAM_SECRET}" # signs PoW challenges; set for multi-instance
+        pow_bits: 16            # leading zero bits required (each bit doubles client work)
+        challenge_ttl_secs: 300 # how long a challenge stays valid
+        min_fill_secs: 3        # reject comments submitted faster than this after the challenge
+        honeypot: true          # reject requests whose hidden "website" field is non-empty
+        rate_per_ip: 5          # per-IP submissions per window (<=0 disables)
+        rate_per_target: 20     # per commentable (type:id) per window
+        rate_global: 500        # total submissions per window
+        rate_window_secs: 60    # shared rate-limit window
 ```
 
 ### Configuration Options
@@ -64,6 +76,34 @@ plugins:
 | `enable_nesting` | `bool` | `true` | Allow nested/threaded comments |
 | `max_nesting_depth` | `int` | `10` | Maximum nesting depth for replies |
 | `default_status` | `string` | `"awaiting"` | Default status for new comments (awaiting, published, draft, moderated) |
+| `antispam.enabled` | `bool` | `false` | Master switch for anonymous-comment anti-spam |
+| `antispam.secret` | `string` | random | HMAC secret signing proof-of-work challenges (set it for multi-instance deployments) |
+| `antispam.pow_bits` | `int` | `0` | Leading zero bits required in the PoW solution (0 disables PoW) |
+| `antispam.challenge_ttl_secs` | `int` | `0` | Challenge validity window in seconds |
+| `antispam.min_fill_secs` | `int` | `0` | Minimum delay between challenge issuance and submission |
+| `antispam.honeypot` | `bool` | `false` | Reject requests whose hidden `website` field is non-empty |
+| `antispam.rate_per_ip` | `int` | `0` | Max submissions per client IP per window (0 disables) |
+| `antispam.rate_per_target` | `int` | `0` | Max submissions per commentable `type:id` per window (0 disables) |
+| `antispam.rate_global` | `int` | `0` | Max submissions across all callers per window (0 disables) |
+| `antispam.rate_window_secs` | `int` | `60` | Shared rate-limit window in seconds |
+
+### Anonymous comment anti-spam
+
+Anonymous commenting stays open, but can be protected without relying on
+spoofable User-Agent or IP headers:
+
+1. **Trusted proxy** — configure the GoREST server's proxy trust so `c.IP()`
+   reflects the real client and `X-Forwarded-For` cannot be forged.
+2. **Proof of work** — clients call `GET /comments/challenge`, solve the
+   returned hashcash-style challenge, and send `challenge` + `solution` with the
+   comment. Challenges are stateless and HMAC-signed.
+3. **Honeypot + min fill time** — a hidden `website` field must stay empty, and
+   submissions faster than `min_fill_secs` after the challenge are rejected.
+4. **Layered rate limits** — per IP, per target, and global fixed-window limits.
+5. **Moderation** — new comments remain in the `awaiting` status queue.
+
+Authenticated users bypass these checks. All layers are disabled until enabled
+in config.
 
 ## API Endpoints
 

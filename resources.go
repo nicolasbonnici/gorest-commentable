@@ -1,6 +1,8 @@
 package commentable
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v3"
 	auth "github.com/nicolasbonnici/gorest/auth"
 	"github.com/nicolasbonnici/gorest/crud"
@@ -79,6 +81,7 @@ func RegisterCommentRoutes(router fiber.Router, db database.Database, config *Co
 
 	router.Get("/comments", res.GetAll)
 	router.Get("/comments/thread", res.GetThread)
+	router.Get("/comments/challenge", res.Challenge)
 	router.Get("/comments/:id", res.GetByID)
 	router.Post("/comments", res.Create)
 	router.Put("/comments/:id", res.Update)
@@ -87,6 +90,20 @@ func RegisterCommentRoutes(router fiber.Router, db database.Database, config *Co
 
 func (r *CommentResource) Create(c fiber.Ctx) error {
 	return r.processor.Create(c)
+}
+
+// Challenge issues a proof-of-work challenge for anonymous commenters to solve
+// before posting. It is only available when anti-spam is enabled.
+func (r *CommentResource) Challenge(c fiber.Ctx) error {
+	svc := r.hooks.antispam
+	if svc == nil || !svc.Enabled() {
+		return fiber.NewError(fiber.StatusNotFound, "anti-spam is not enabled")
+	}
+	return c.JSON(fiber.Map{
+		"challenge":  svc.IssueChallenge(time.Now()),
+		"bits":       svc.PoWBits(),
+		"expires_in": int(svc.ChallengeTTL().Seconds()),
+	})
 }
 
 func (r *CommentResource) GetByID(c fiber.Ctx) error {
