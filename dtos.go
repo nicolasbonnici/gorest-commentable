@@ -9,6 +9,14 @@ type CommentCreateDTO struct {
 	Commentable   string  `json:"commentable"`
 	ParentId      *string `json:"parentId,omitempty"`
 	Content       string  `json:"content"`
+
+	// Anti-spam inputs (used only for anonymous comments when anti-spam is
+	// enabled; ignored otherwise). Challenge/Solution carry the proof-of-work
+	// token issued by GET /comments/challenge and its computed solution. Website
+	// is a honeypot field that must stay empty.
+	Challenge string `json:"challenge,omitempty"`
+	Solution  string `json:"solution,omitempty"`
+	Website   string `json:"website,omitempty"`
 }
 
 type CommentUpdateDTO struct {

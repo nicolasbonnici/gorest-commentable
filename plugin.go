@@ -2,6 +2,7 @@ package commentable
 
 import (
 	"github.com/gofiber/fiber/v3"
+	"github.com/nicolasbonnici/gorest-commentable/antispam"
 	"github.com/nicolasbonnici/gorest-commentable/migrations"
 	"github.com/nicolasbonnici/gorest/database"
 	"github.com/nicolasbonnici/gorest/plugin"
@@ -68,7 +69,52 @@ func (p *CommentablePlugin) Initialize(config map[string]interface{}) error {
 		p.config.AllowAnonymous = allowAnonymous
 	}
 
+	if asRaw, ok := config["antispam"].(map[string]interface{}); ok {
+		p.config.AntiSpam = parseAntiSpamConfig(asRaw)
+	}
+
 	return p.config.Validate()
+}
+
+// parseAntiSpamConfig reads the nested `antispam` config block. Numbers may
+// arrive as int (YAML) or float64 (JSON), so both are accepted.
+func parseAntiSpamConfig(m map[string]interface{}) antispam.Config {
+	cfg := antispam.Config{}
+	if v, ok := mapBool(m, "enabled"); ok {
+		cfg.Enabled = v
+	}
+	if v, ok := m["secret"].(string); ok {
+		cfg.Secret = v
+	}
+	if v, ok := mapBool(m, "honeypot"); ok {
+		cfg.Honeypot = v
+	}
+	cfg.PoWBits = mapInt(m, "pow_bits", cfg.PoWBits)
+	cfg.ChallengeTTLSecs = mapInt(m, "challenge_ttl_secs", cfg.ChallengeTTLSecs)
+	cfg.MinFillSecs = mapInt(m, "min_fill_secs", cfg.MinFillSecs)
+	cfg.RatePerIP = mapInt(m, "rate_per_ip", cfg.RatePerIP)
+	cfg.RatePerTarget = mapInt(m, "rate_per_target", cfg.RatePerTarget)
+	cfg.RateGlobal = mapInt(m, "rate_global", cfg.RateGlobal)
+	cfg.RateWindowSecs = mapInt(m, "rate_window_secs", cfg.RateWindowSecs)
+	return cfg
+}
+
+func mapBool(m map[string]interface{}, key string) (bool, bool) {
+	v, ok := m[key].(bool)
+	return v, ok
+}
+
+func mapInt(m map[string]interface{}, key string, fallback int) int {
+	switch v := m[key].(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	default:
+		return fallback
+	}
 }
 
 func (p *CommentablePlugin) Handler() fiber.Handler {
