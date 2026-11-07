@@ -24,17 +24,17 @@ func (c *CommentConverter) UpdateDTOToModel(dto CommentUpdateDTO) Comment {
 
 func (c *CommentConverter) ModelToResponseDTO(model Comment) CommentResponseDTO {
 	return CommentResponseDTO{
-		ID:            model.Id,
-		UserID:        model.UserId,
-		CommentableID: model.CommentableId,
-		Commentable:   model.Commentable,
-		ParentID:      model.ParentId,
-		Content:       model.Content,
-		Status:        model.Status,
-		IPAddress:     model.IpAddress,
-		UserAgent:     model.UserAgent,
-		UpdatedAt:     model.UpdatedAt,
-		CreatedAt:     model.CreatedAt,
+		ID:              model.Id,
+		UserID:          model.UserId,
+		CommentableID:   model.CommentableId,
+		CommentableType: model.Commentable,
+		ParentID:        model.ParentId,
+		Content:         model.Content,
+		Status:          model.Status,
+		IPAddress:       model.IpAddress,
+		UserAgent:       model.UserAgent,
+		UpdatedAt:       model.UpdatedAt,
+		CreatedAt:       model.CreatedAt,
 	}
 }
 
