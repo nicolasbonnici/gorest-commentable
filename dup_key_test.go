@@ -10,35 +10,48 @@ import (
 
 // TestResponseDTO_NoDuplicateCommentableKey guards against the regression where
 // the response carried two "commentable" members: the literal type field and the
-// FK relation IRI the JSON-LD serializer derives from commentableId. The type
-// discriminator is now serialized as "commentableType".
+// FK relation IRI the JSON-LD serializer derives from commentableId.
 func TestResponseDTO_NoDuplicateCommentableKey(t *testing.T) {
+	targetID := "a1b2c3d4-0000-0000-0000-000000000000"
 	dto := CommentResponseDTO{
-		ID:              "3f1a7c22-5f6e-4a0b-9d3e-1c2b4a5d6e7f",
-		CommentableID:   "a1b2c3d4-0000-0000-0000-000000000000",
-		CommentableType: "post",
-		Content:         "hello",
-		Status:          "published",
+		ID:            "3f1a7c22-5f6e-4a0b-9d3e-1c2b4a5d6e7f",
+		CommentableID: &targetID,
+		Commentable:   "post",
+		Content:       "hello",
+		Status:        "published",
 	}
 
-	raw, err := serializer.GetSerializer("jsonld").Serialize(dto, "/comments/"+dto.ID)
-	if err != nil {
-		t.Fatalf("serialize: %v", err)
+	// A non-empty expand forces the map-based path; nil takes the fast streaming
+	// path. Both rewrite "<x>Id" fields, so both must be covered.
+	for name, expand := range map[string][]string{"fast": nil, "map": {"parent"}} {
+		t.Run(name, func(t *testing.T) {
+			ld := serializer.GetSerializer("jsonld").(*serializer.JSONLDSerializer)
+			raw, err := ld.SerializeWithExpand(dto, "/comments/"+dto.ID, expand)
+			if err != nil {
+				t.Fatalf("serialize: %v", err)
+			}
+			assertSingleCommentable(t, raw, targetID)
+		})
 	}
+}
+
+func assertSingleCommentable(t *testing.T, raw []byte, targetID string) {
+	t.Helper()
 
 	keyCounts := countObjectKeys(t, raw)
-
-	if keyCounts["commentable"] > 1 {
-		t.Fatalf("duplicate \"commentable\" key in response: %d occurrences\n%s", keyCounts["commentable"], raw)
-	}
-	if keyCounts["commentableType"] != 1 {
-		t.Fatalf("expected exactly one \"commentableType\" key, got %d\n%s", keyCounts["commentableType"], raw)
+	if keyCounts["commentable"] != 1 {
+		t.Fatalf("expected exactly one \"commentable\" key, got %d\n%s", keyCounts["commentable"], raw)
 	}
 
-	// The response must also be valid JSON (no duplicate members anywhere).
-	var sink map[string]any
-	if err := json.Unmarshal(raw, &sink); err != nil {
+	var got map[string]any
+	if err := json.Unmarshal(raw, &got); err != nil {
 		t.Fatalf("response is not valid JSON: %v\n%s", err, raw)
+	}
+	if got["commentable"] != "post" {
+		t.Errorf("commentable = %v, want \"post\"\n%s", got["commentable"], raw)
+	}
+	if got["commentableId"] != targetID {
+		t.Errorf("commentableId = %v, want %s\n%s", got["commentableId"], targetID, raw)
 	}
 }
 
